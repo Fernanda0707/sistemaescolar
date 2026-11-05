@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Escolar - Control RBAC</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex items-center justify-center">
+
+    <!-- ========================================== -->
+    <!-- 1. PANTALLA DE LOGIN (AUTENTICACIÓN RBAC)  -->
+    <!-- ========================================== -->
+    <div id="login-screen" class="w-full max-w-md p-6">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-2xl space-y-6">
+            
+            <div class="text-center space-y-2">
+                <div class="inline-flex p-3 bg-indigo-600 rounded-2xl text-white mb-2 shadow-lg shadow-indigo-600/30">
+                    <i data-lucide="shield-check" class="w-8 h-8"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold text-white">Sistema Escolar</h1>
+                <p class="text-xs text-slate-400 font-medium">Control de Acceso Multirrol RBAC v2026</p>
+            </div>
+
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Correo Electrónico</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
+                            <i data-lucide="mail" class="w-4 h-4"></i>
+                        </span>
+                        <input type="email" id="login-email" placeholder="usuario@escuela.edu" required
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Contraseña</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
+                            <i data-lucide="lock" class="w-4 h-4"></i>
+                        </span>
+                        <input type="password" id="login-password" placeholder="••••••••" required
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                </div>
+
+                <div id="login-error" class="hidden p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-xl flex items-center gap-2">
+                    <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                    <span>Credenciales incorrectas. Intenta de nuevo.</span>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl text-sm transition shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2">
+                    <span>Iniciar Sesión</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </form>
+
+            <div class="pt-4 border-t border-slate-700/60 space-y-2">
+                <p class="text-xs text-slate-400 font-semibold text-center">Selecciona un rol de prueba:</p>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button type="button" onclick="fillCredentials('admin@escuela.edu', 'admin2026')" class="p-2.5 bg-slate-900/60 hover:bg-slate-900 border border-slate-700/60 rounded-xl text-left transition group">
+                        <p class="font-bold text-indigo-400">1. Administración</p>
+                        <p class="text-slate-400 text-[10px]">admin@escuela.edu</p>
+                    </button>
+                    <button type="button" onclick="fillCredentials('amlopez@escuela.edu', 'password123')" class="p-2.5 bg-slate-900/60 hover:bg-slate-900 border border-slate-700/60 rounded-xl text-left transition group">
+                        <p class="font-bold text-emerald-400">2. Profesor</p>
+                        <p class="text-slate-400 text-[10px]">amlopez@escuela.edu</p>
+                    </button>
+                    <button type="button" onclick="fillCredentials('finanzas@escuela.edu', 'caja2026')" class="p-2.5 bg-slate-900/60 hover:bg-slate-900 border border-slate-700/60 rounded-xl text-left transition group">
+                        <p class="font-bold text-amber-400">3. Finanzas / Caja</p>
+                        <p class="text-slate-400 text-[10px]">finanzas@escuela.edu</p>
+                    </button>
+                    <button type="button" onclick="fillCredentials('alumno@escuela.edu', 'estudiante2026')" class="p-2.5 bg-slate-900/60 hover:bg-slate-900 border border-slate-700/60 rounded-xl text-left transition group">
+                        <p class="font-bold text-sky-400">4. Alumno</p>
+                        <p class="text-slate-400 text-[10px]">alumno@escuela.edu</p>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- 2. APLICACIÓN PRINCIPAL (PANEL DE CONTROL) -->
+    <!-- ========================================== -->
+    <div id="app-layout" class="hidden min-h-screen w-full flex">
+
+        <!-- SIDEBAR DINÁMICO -->
+        <aside class="w-64 bg-slate-800 border-r border-slate-700 p-5 flex flex-col justify-between shrink-0">
+            <div>
+                <!-- LOGO -->
+                <div class="flex items-center gap-3 mb-6 px-2">
+                    <div class="p-2 bg-indigo-600 rounded-lg text-white">
+                        <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight">Sistema Escolar</h1>
+                        <span id="role-badge" class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">ROL</span>
+                    </div>
+                </div>
+
+                <!-- OPCIÓN 1: MI PERFIL -->
+                <div class="mb-6 p-3 bg-slate-700/50 rounded-xl border border-slate-600/50 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p id="user-name" class="text-sm font-semibold text-white">---</p>
+                            <p id="user-role" class="text-xs text-slate-400">---</p>
+                        </div>
+                        <button onclick="handleLogout()" title="Salir" class="p-1.5 hover:bg-rose-500/20 text-rose-400 rounded-lg transition">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <button onclick="openProfileModal()" class="w-full text-center py-1.5 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-xs font-semibold rounded-lg border border-indigo-500/30 transition flex items-center justify-center gap-1.5">
+                        <i data-lucide="user" class="w-3.5 h-3.5"></i> Opción 1: Ver Mi Perfil
+                    </button>
+                </div>
+
+                <!-- MENÚ DE NAVEGACIÓN SEGÚN ROL -->
+                <nav class="space-y-1 text-sm font-medium">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Executive Dashboard
+                    </button>
+                    <button onclick="switchTab('students')" id="nav-students" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
+                        <i data-lucide="users" class="w-4 h-4"></i> Directorio Alumnos
+                    </button>
+                    <button onclick="switchTab('courses')" id="nav-courses" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
+                        <i data-lucide="book-open" class="w-4 h-4"></i> Cursos y Horarios
+                    </button>
+                    <button onclick="switchTab('enrollment')" id="nav-enrollment" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i> Inscripciones
+                    </button>
+                    <button onclick="switchTab('grades')" id="nav-grades" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
+                        <i data-lucide="award" class="w-4 h-4"></i> Kárdex y Notas
+                    </button>
+                    <button onclick="switchTab('attendance')" id="nav-attendance" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
+                        <i data-lucide="calendar-check" class="w-4 h-4"></i> Control Asistencia
+                    </button>
+                    <button onclick="switchTab('finance')" id="nav-finance" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
+                        <i data-lucide="wallet" class="w-4 h-4"></i> Estado de Cuenta
+                    </button>
+                    <button onclick="switchTab('notifications')" id="nav-notifications" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
+                        <i data-lucide="bell" class="w-4 h-4"></i> Notificaciones
+                    </button>
+                    <button onclick="switchTab('nominas')" id="nav-nominas" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
+                        <i data-lucide="badge-dollar-sign" class="w-4 h-4 text-emerald-400"></i> Servicios Nóminas (API)
+                    </button>
+                </nav>
+            </div>
+
+            <div class="text-xs text-slate-500 border-t border-slate-700/60 pt-4">
+                <p>Sesión RBAC: <span id="token-display" class="text-emerald-400 font-mono text-[10px]">Activo</span></p>
+                <p class="mt-1">Período Académico: 2026-2</p>
+            </div>
+        </aside>
+
+        <!-- ÁREA PRINCIPAL -->
+        <main class="flex-1 p-8 overflow-y-auto">
+            
+            <header class="flex justify-between items-center mb-8 pb-4 border-b border-slate-800">
+                <div>
+                    <h2 id="page-title" class="text-2xl font-bold">Panel Principal</h2>
+                    <p id="page-subtitle" class="text-sm text-slate-400">Cargando modulo...</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-full flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bus de Eventos Activo
+                    </span>
+                </div>
+            </header>
+
+            <!-- DASHBOARD -->
+            <section id="tab-dashboard" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-slate-800 border border-slate-700 p-5 rounded-xl">
+                        <p class="text-xs text-slate-400 font-medium uppercase">Estudiantes Activos</p>
+                        <h3 class="text-3xl font-extrabold mt-2 text-indigo-400">1,250</h3>
+                        <p class="text-xs text-emerald-400 mt-2">↑ 96.8% Retención</p>
+                    </div>
+                    <div class="bg-slate-800 border border-slate-700 p-5 rounded-xl">
+                        <p class="text-xs text-slate-400 font-medium uppercase">Promedio Institucional</p>
+                        <h3 class="text-3xl font-extrabold mt-2 text-emerald-400">8.7 / 10</h3>
+                        <p class="text-xs text-slate-400 mt-2">Evaluaciones 2026-2</p>
+                    </div>
+                    <div class="bg-slate-800 border border-slate-700 p-5 rounded-xl">
+                        <p class="text-xs text-slate-400 font-medium uppercase">Ingresos Totales</p>
+                        <h3 class="text-3xl font-extrabold mt-2 text-white">$3,750,000 <span class="text-xs text-slate-400">MXN</span></h3>
+                        <p class="text-xs text-slate-400 mt-2">Colegiaturas del período</p>
+                    </div>
+                    <div class="bg-slate-800 border border-slate-700 p-5 rounded-xl">
+                        <p class="text-xs text-slate-400 font-medium uppercase">Tasa de Morosidad</p>
+                        <h3 class="text-3xl font-extrabold mt-2 text-rose-400">2.4%</h3>
+                        <p class="text-xs text-slate-400 mt-2">Nivel bajo controlado</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/50 border border-slate-700 p-6 rounded-xl flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold">Opción 12: Exportar Reporte Consolidado</h4>
+                        <p class="text-sm text-slate-400">Genera y descarga el informe institucional completo (`GET /api/v1/reports/export`).</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="exportReport('PDF')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition flex items-center gap-2">
+                            <i data-lucide="file-text" class="w-4 h-4"></i> Exportar PDF
+                        </button>
+                        <button onclick="exportReport('CSV')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-semibold rounded-lg transition flex items-center gap-2">
+                            <i data-lucide="sheet" class="w-4 h-4"></i> Exportar CSV
+                        </button>
+                    </div>
+                </div>
+                <!-- TARJETA DE ACCESO RÁPIDO: SERVICIOS DE NÓMINAS -->
+                <div class="bg-gradient-to-r from-emerald-950/40 to-slate-800/80 border border-emerald-500/30 p-6 rounded-xl flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">
+                            <i data-lucide="link" class="w-3.5 h-3.5"></i> Integración Externa Activa
+                        </div>
+                        <h4 class="font-bold text-white text-base">Servicios de Nóminas (EmpleadoService & ContratoService)</h4>
+                        <p class="text-xs text-slate-300 mt-0.5">Consulta expedientes de docentes y contratos laborales directamente desde la base de datos de Nóminas (:8000).</p>
+                    </div>
+                    <button onclick="switchTab('nominas')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-lg shadow-emerald-600/20">
+                        <span>Abrir Módulo de Nóminas</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- DIRECTORIO DE ALUMNOS -->
+            <section id="tab-students" class="hidden space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-center bg-slate-800 border border-slate-700 p-4 rounded-xl gap-4">
+                    <div class="relative flex-1 w-full max-w-md">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                        </span>
+                        <input type="text" id="search-student-input" onkeyup="filterStudents()" placeholder="Buscar alumno por nombre, ID o matrícula..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+                        <span class="text-xs font-mono text-indigo-400 bg-indigo-500/10 px-3 py-2 rounded-lg border border-indigo-500/20 hidden sm:inline-block">
+                            GET /api/v1/enrollments/students
+                        </span>
+                        <!-- BOTÓN RESTRINGIDO A ADMINISTRACION -->
+                        <button id="btn-add-student" onclick="openAddStudentModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition flex items-center gap-2 shadow-lg shadow-indigo-600/25 shrink-0">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i>
+                            <span>+ Agregar Alumno</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="students-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            </section>
+
+            <!-- CURSOS Y HORARIOS -->
+            <section id="tab-courses" class="hidden space-y-6">
+                <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
+                    <div class="p-4 bg-slate-800/80 border-b border-slate-700 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div>
+                            <h3 class="font-bold text-lg text-white">Oferta Académica Vigente</h3>
+                            <p class="text-xs text-slate-400">Catálogo general de materias, profesores, aulas y horarios asignados.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs text-indigo-400 font-mono bg-indigo-500/10 px-3 py-2 rounded-lg border border-indigo-500/20 hidden sm:inline-block">
+                                GET /api/v1/courses
+                            </span>
+                            <!-- BOTÓN RESTRINGIDO A ADMINISTRACION -->
+                            <button id="btn-add-course" onclick="openAddCourseModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition flex items-center gap-2 shadow-lg shadow-indigo-600/25 shrink-0">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                <span>+ Crear Curso</span>
+                            </button>
+                        </div>
+                    </div>
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900/50 text-slate-400 text-xs uppercase border-b border-slate-700">
+                                <th class="p-4">ID</th>
+                                <th class="p-4">Materia / Horario</th>
+                                <th class="p-4">Grupo</th>
+                                <th class="p-4">Profesor</th>
+                                <th class="p-4">Aula</th>
+                                <th class="p-4">Créditos</th>
+                                <th class="p-4">Cupo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="courses-table-body" class="divide-y divide-slate-700/50 text-sm"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- INSCRIPCIÓN -->
+            <section id="tab-enrollment" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- FORMULARIO RESTRINGIDO A ADMINISTRACIÓN -->
+                    <div id="enrollment-form-card" class="bg-slate-800 border border-slate-700 p-6 rounded-xl">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg">Matricular Estudiante</h3>
+                            <span class="text-xs font-mono text-indigo-400">POST /api/v1/enrollments</span>
+                        </div>
+                        <form onsubmit="handleEnrollment(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">ID Estudiante</label>
+                                <input type="text" id="enr-student-id" value="std_456" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Curso a Seleccionar</label>
+                                <select id="enr-course-id" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></select>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-lg text-sm transition">
+                                Matricular Estudiante
+                            </button>
+                        </form>
+                    </div>
+
+                    <div id="enrollment-list-card" class="md:col-span-2 bg-slate-800 border border-slate-700 p-6 rounded-xl">
+                        <h3 class="font-bold text-lg mb-4">Carga Académica Registrada</h3>
+                        <ul id="enrolled-courses-list" class="space-y-3"></ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CALIFICACIONES Y KÁRDEX -->
+            <section id="tab-grades" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- FORMULARIO REGISTRO DE NOTA (PROFESOR Y ADMIN) -->
+                    <div id="grades-form-card" class="bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-lg">Registrar Nota</h3>
+                            <span class="text-xs font-mono text-emerald-400">POST /api/v1/grades</span>
+                        </div>
+                        <form onsubmit="handleAddGrade(event)" class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">ID Estudiante</label>
+                                <input type="text" id="grade-std-id" value="std_456" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Curso</label>
+                                <select id="grade-crs-id" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Concepto</label>
+                                <input type="text" id="grade-concept" placeholder="Ej. Parcial 3" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Nota (0.0 - 10.0)</label>
+                                <input type="number" step="0.1" min="0" max="10" id="grade-val" placeholder="9.5" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                            </div>
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 rounded-lg text-sm transition">
+                                Guardar Calificación
+                            </button>
+                        </form>
+                    </div>
+
+                    <div id="grades-card-container" class="md:col-span-2 bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold text-lg">Historial Académico (Kárdex)</h3>
+                                <p class="text-xs text-slate-400 font-mono">GET /api/v1/grades/report-card</p>
+                            </div>
+                            <span class="text-xs font-mono text-emerald-400">Promedio Acumulado: <strong id="gpa-display" class="text-base">9.17</strong></span>
+                        </div>
+                        <div id="report-card-container" class="space-y-4"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ASISTENCIA -->
+            <section id="tab-attendance" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- FORMULARIO DE REGISTRO (PROFESOR Y ADMIN) -->
+                    <div id="attendance-form-card" class="bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-lg">Registrar Asistencia</h3>
+                            <span class="text-xs font-mono text-indigo-400">POST /api/v1/attendance</span>
+                        </div>
+                        <form onsubmit="handleAttendance(event)" class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">ID Estudiante</label>
+                                <input type="text" id="att-std-id" value="std_456" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Curso</label>
+                                <select id="att-crs-id" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Estatus</label>
+                                <select id="att-status" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                                    <option value="PRESENTE">PRESENTE</option>
+                                    <option value="FALTA">FALTA</option>
+                                    <option value="RETARDO">RETARDO</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 rounded-lg text-sm transition">
+                                Guardar Asistencia
+                            </button>
+                        </form>
+                    </div>
+
+                    <div id="attendance-summary-container" class="md:col-span-2 bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-lg">Resumen de Asistencias</h3>
+                            <span class="text-xs font-mono text-slate-400">GET /api/v1/attendance/summary</span>
+                        </div>
+                        <div id="attendance-summary-cards" class="grid grid-cols-3 gap-3 text-center"></div>
+                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 space-y-2">
+                            <h4 class="text-xs font-semibold uppercase text-slate-400">Historial Reciente</h4>
+                            <ul id="attendance-history-list" class="space-y-2 text-xs"></ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FINANZAS Y ESTADO DE CUENTA -->
+            <section id="tab-finance" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2 bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-lg">Estado de Cuenta y Cargos</h3>
+                            <span class="text-xs font-mono text-indigo-400">GET /api/v1/finance/account-status</span>
+                        </div>
+                        <div class="space-y-3" id="finance-charges-list"></div>
+                    </div>
+
+                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-xl flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-lg mb-2">Resumen Financiero</h3>
+                            <p class="text-xs text-slate-400">Balance global de colegiaturas y derechos del ciclo.</p>
+                            <div class="my-6 p-4 bg-slate-900/60 rounded-xl border border-slate-700 text-center">
+                                <span class="text-xs text-slate-400 uppercase">Saldo Pendiente</span>
+                                <div id="total-pending-balance" class="text-3xl font-extrabold text-rose-400 mt-1">$3,500.00 MXN</div>
+                            </div>
+                        </div>
+                        <div class="text-xs text-slate-500">
+                            <p>🔒 Control RBAC: Solo el personal de Finanzas / Caja puede validar facturas y registrar cobros.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- NOTIFICACIONES -->
+            <section id="tab-notifications" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- ENVÍO DE NOTIFICACIONES (ADMIN, FINANZAS, PROFESOR) -->
+                    <div id="notif-form-card" class="bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-lg">Enviar Aviso Directo</h3>
+                            <span class="text-xs font-mono text-indigo-400">POST /api/v1/notifications/send</span>
+                        </div>
+                        <form onsubmit="handleSendNotification(event)" class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">ID Estudiante</label>
+                                <input type="text" id="notif-std-id" value="std_456" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Canal</label>
+                                <select id="notif-channel" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                                    <option value="EMAIL">EMAIL</option>
+                                    <option value="SMS">SMS</option>
+                                    <option value="PUSH">PUSH</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Título</label>
+                                <input type="text" id="notif-title" placeholder="Aviso Importante" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Mensaje</label>
+                                <textarea id="notif-msg" rows="3" placeholder="Escribe el mensaje..." required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 rounded-lg text-sm transition">
+                                Enviar Notificación
+                            </button>
+                        </form>
+                    </div>
+
+                    <div id="notif-list-card" class="md:col-span-2 bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-lg">Bandeja de Mensajes</h3>
+                            <span class="text-xs font-mono text-indigo-400">GET /api/v1/notifications</span>
+                        </div>
+                        <div id="notifications-list" class="space-y-3"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- TAB: SERVICIOS DE NÓMINAS (INTEGRACIÓN API) -->
+            <!-- ========================================== -->
+            <section id="tab-nominas" class="hidden space-y-6">
+                <!-- BANNER -->
+                <div class="bg-gradient-to-r from-emerald-950/60 to-slate-800 border border-emerald-500/30 p-6 rounded-2xl flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Integración REST con Nóminas
+                        </div>
+                        <h3 class="text-xl font-extrabold text-white">Servicios de Nóminas Consumidos por API</h3>
+                        <p class="text-xs text-slate-300 mt-1 max-w-xl">
+                            Control Escolar consulta en tiempo real los expedientes y contratos de los profesores desde la base de datos de Nóminas (:8000), sin tener acceso directo a su SQLite.
+                        </p>
+                    </div>
+                    <span class="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-mono rounded-lg">
+                        API Nóminas :8000
+                    </span>
+                </div>
+
+                <!-- CONFIGURACIÓN IP NÓMINAS -->
+                <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl flex items-center justify-between gap-4 flex-wrap">
+                    <div>
+                        <p class="text-xs font-bold text-white">Dirección de la API de Nóminas (Python)</p>
+                        <p class="text-[11px] text-slate-400">Si tu compañero está en otra computadora, escribe aquí su IP (ej: <code class="text-emerald-400">http://192.168.1.125:8000</code>).</p>
+                    </div>
+                    <div class="flex gap-2 items-center">
+                        <input type="text" id="nominas-server-url" value="http://127.0.0.1:8000" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono w-60">
+                        <button onclick="guardarUrlNominas()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition">Guardar IP</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- SERVICIO 1: EMPLEADO SERVICE (EXPEDIENTE DOCENTE) -->
+                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl space-y-4">
+                        <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                            <div>
+                                <h4 class="font-bold text-white text-base">1. Expediente Docente (EmpleadoService)</h4>
+                                <p class="text-xs text-slate-400">Verifica RFC, estatus laboral y datos de nómina del docente.</p>
+                            </div>
+                            <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+                                GET /api/external/docente
+                            </span>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <input type="text" id="nominas-docente-search" value="Carlos" placeholder="Buscar por nombre, RFC o correo..." 
+                                class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                            <button type="button" onclick="consultarDocenteNominas()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-lg shadow-emerald-600/20">
+                                <i data-lucide="search" class="w-3.5 h-3.5"></i> Consultar
+                            </button>
+                        </div>
+
+                        <div id="nominas-docente-result" class="min-h-[160px] bg-slate-900/60 border border-slate-700/60 rounded-xl p-4 text-xs flex items-center justify-center text-slate-400">
+                            Haz clic en "Consultar" para buscar al docente en Nóminas.
+                        </div>
+                    </div>
+
+                    <!-- SERVICIO 2: CONTRATO SERVICE (CONTRATO LABORAL) -->
+                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl space-y-4">
+                        <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                            <div>
+                                <h4 class="font-bold text-white text-base">2. Contrato Laboral (ContratoService)</h4>
+                                <p class="text-xs text-slate-400">Consulta tipo de contrato, jornada y vigencia laboral en Nóminas.</p>
+                            </div>
+                            <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+                                GET /api/external/contrato
+                            </span>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <input type="number" id="nominas-contrato-id" value="1" placeholder="ID de Empleado (ej. 1, 2)..." 
+                                class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                            <button type="button" onclick="consultarContratoNominas()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-lg shadow-emerald-600/20">
+                                <i data-lucide="file-check" class="w-3.5 h-3.5"></i> Consultar
+                            </button>
+                        </div>
+
+                        <div id="nominas-contrato-result" class="min-h-[160px] bg-slate-900/60 border border-slate-700/60 rounded-xl p-4 text-xs flex items-center justify-center text-slate-400">
+                            Haz clic en "Consultar" para ver el contrato en Nóminas.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODAL 1: MI PERFIL -->
+    <div id="profile-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="user-check" class="w-5 h-5 text-indigo-400"></i>
+                    <h3 class="font-bold text-lg text-white">Mi Perfil (GET /api/v1/users/me)</h3>
+                </div>
+                <button onclick="closeProfileModal()" class="text-slate-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3 text-sm">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-700/60">
+                        <span class="text-xs text-slate-400 uppercase font-semibold">ID Usuario</span>
+                        <p id="prof-id" class="font-mono text-indigo-400 font-bold mt-0.5">---</p>
+                    </div>
+                    <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-700/60">
+                        <span class="text-xs text-slate-400 uppercase font-semibold">Rol Asignado</span>
+                        <p id="prof-rol" class="font-bold text-emerald-400 mt-0.5">---</p>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-700/60 space-y-1">
+                    <span class="text-xs text-slate-400 uppercase font-semibold">Nombre Completo</span>
+                    <p id="prof-nombre" class="font-semibold text-white">---</p>
+                </div>
+
+                <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-700/60 space-y-1">
+                    <span class="text-xs text-slate-400 uppercase font-semibold">Correo Electrónico</span>
+                    <p id="prof-email" class="text-slate-300 font-mono text-xs">---</p>
+                </div>
+
+                <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-700/60 space-y-1">
+                    <span class="text-xs text-slate-400 uppercase font-semibold">Permisos Habilitados</span>
+                    <div id="prof-permisos" class="flex flex-wrap gap-1.5 pt-1"></div>
+                </div>
+            </div>
+
+            <button onclick="closeProfileModal()" class="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl text-sm transition">
+                Cerrar Ventana
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 2: EXPEDIENTE COMPLETO DEL ALUMNO -->
+    <div id="student-detail-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto space-y-5 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                <div>
+                    <h3 id="std-modal-name" class="font-bold text-xl text-white">---</h3>
+                    <p id="std-modal-sub" class="text-xs text-slate-400 font-mono">---</p>
+                </div>
+                <button onclick="closeStudentModal()" class="text-slate-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <div id="std-modal-body" class="space-y-4"></div>
+
+            <button onclick="closeStudentModal()" class="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl text-sm transition">
+                Cerrar Expediente
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 3: AGREGAR NUEVO ALUMNO -->
+    <div id="add-student-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="user-plus" class="w-5 h-5 text-indigo-400"></i>
+                    <h3 class="font-bold text-lg text-white">Registrar Nuevo Alumno</h3>
+                </div>
+                <button onclick="closeAddStudentModal()" class="text-slate-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleAddStudent(event)" class="space-y-3 text-sm">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Nombre Completo</label>
+                    <input type="text" id="add-std-name" placeholder="Ej. Sofía Hernández" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Correo Electrónico</label>
+                    <input type="email" id="add-std-email" placeholder="sofia@escuela.edu" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">ID Estudiante</label>
+                        <input type="text" id="add-std-id" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-indigo-400 font-mono font-bold focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Matrícula</label>
+                        <input type="text" id="add-std-matricula" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Período</label>
+                        <input type="text" id="add-std-periodo" value="2026-2" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Estatus</label>
+                        <select id="add-std-estatus" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none">
+                            <option value="MATRICULADO_ACTIVO">MATRICULADO_ACTIVO</option>
+                            <option value="INACTIVO">INACTIVO</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button type="button" onclick="closeAddStudentModal()" class="w-1/2 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl text-sm transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition">
+                        Guardar Alumno
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: CREAR NUEVO CURSO Y HORARIO -->
+    <div id="add-course-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="book-plus" class="w-5 h-5 text-indigo-400"></i>
+                    <h3 class="font-bold text-lg text-white">Registrar Nuevo Curso</h3>
+                </div>
+                <button onclick="closeAddCourseModal()" class="text-slate-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleAddCourse(event)" class="space-y-3 text-sm">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Nombre de la Materia</label>
+                    <input type="text" id="add-crs-materia" placeholder="Ej. Química Orgánica" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">ID Curso</label>
+                        <input type="text" id="add-crs-id" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-indigo-400 font-mono font-bold focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Grupo</label>
+                        <input type="text" id="add-crs-grupo" placeholder="Ej. 2-A" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Profesor Asignado</label>
+                    <input type="text" id="add-crs-profesor" placeholder="Ej. Dr. Roberto Gómez" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Aula / Edificio</label>
+                    <input type="text" id="add-crs-aula" placeholder="Ej. Edificio A - Aula 102" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Créditos</label>
+                        <input type="number" id="add-crs-creditos" value="6" min="1" max="15" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Cupo Máximo</label>
+                        <input type="number" id="add-crs-cupo" value="30" min="1" max="100" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Horario (Días y Hora)</label>
+                    <input type="text" id="add-crs-horario" placeholder="Ej. Lun/Mié 08:00 - 09:30" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none">
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button type="button" onclick="closeAddCourseModal()" class="w-1/2 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl text-sm transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition">
+                        Guardar Curso
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-indigo-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition transform translate-y-20 opacity-0 pointer-events-none z-50">
+        <i data-lucide="check-circle" class="w-5 h-5"></i>
+        <span id="toast-message" class="text-sm font-medium">Operación realizada con éxito</span>
+    </div>
+
+    <!-- JAVASCRIPT CON MOTOR RBAC -->
+    <script>
+        // BASE DE DATOS DE USUARIOS CON LOS 4 ROLES
+        const userDatabase = [
+            {
+                email: "admin@escuela.edu",
+                password: "admin2026",
+                nombre: "Lic. Roberto Servín",
+                rol: "ADMINISTRACION",
+                id: "usr_admin_01",
+                permisos: ["usuarios:crear", "alumnos:crear", "cursos:crear", "inscripciones:gestionar", "reportes:exportar"]
+            },
+            {
+                email: "amlopez@escuela.edu",
+                password: "password123",
+                nombre: "Dra. Ana María López",
+                rol: "PROFESOR",
+                id: "usr_prof_98",
+                permisos: ["notas:escribir", "asistencia:registrar", "cursos:leer"]
+            },
+            {
+                email: "finanzas@escuela.edu",
+                password: "caja2026",
+                nombre: "Mtra. Laura Esquivel",
+                rol: "FINANZAS",
+                id: "usr_fin_55",
+                permisos: ["finanzas:cobrar", "facturas:emitir", "estado_cuenta:leer"]
+            },
+            {
+                email: "alumno@escuela.edu",
+                password: "estudiante2026",
+                nombre: "Carlos Mendoza",
+                rol: "ALUMNO",
+                id: "std_456",
+                permisos: ["boleta:consultar", "asistencia:consultar", "saldo:consultar"]
+            }
+        ];
+
+        const state = {
+            currentUser: null,
+            token: null,
+            students: [
+                {
+                    estudianteId: "std_456",
+                    nombre: "Carlos Mendoza",
+                    matricula: "2026-EST-9142",
+                    periodo: "2026-2",
+                    estatus: "MATRICULADO_ACTIVO",
+                    email: "alumno@escuela.edu"
+                },
+                {
+                    estudianteId: "std_789",
+                    nombre: "Mariana Ríos",
+                    matricula: "2026-EST-1102",
+                    periodo: "2026-2",
+                    estatus: "MATRICULADO_ACTIVO",
+                    email: "m.rios@escuela.edu"
+                }
+            ],
+            courses: [
+                { id: "crs_101", materia: "Matemáticas III", grupo: "3-A", profesor: "Lic. Carlos Gómez", aula: "Edificio B - Aula 204", creditos: 6, cupoActual: 2, cupoMaximo: 30, horario: "Lun/Mié 08:00 - 09:30" },
+                { id: "crs_102", materia: "Física I", grupo: "1-B", profesor: "Dra. María Elena Torres", aula: "Laboratorio 1", creditos: 6, cupoActual: 1, cupoMaximo: 30, horario: "Mar/Jue 10:00 - 11:30" }
+            ],
+            enrollments: [
+                { studentId: "std_456", courseId: "crs_101" },
+                { studentId: "std_456", courseId: "crs_102" },
+                { studentId: "std_789", courseId: "crs_101" }
+            ],
+            grades: [
+                { studentId: "std_456", courseId: "crs_101", concepto: "Parcial 1", nota: 9.0 },
+                { studentId: "std_456", courseId: "crs_101", concepto: "Parcial 2", nota: 9.5 },
+                { studentId: "std_456", courseId: "crs_101", concepto: "Examen Final", nota: 9.0 },
+                { studentId: "std_456", courseId: "crs_102", concepto: "Parcial 1", nota: 8.5 },
+                { studentId: "std_456", courseId: "crs_102", concepto: "Parcial 2", nota: 9.5 },
+                { studentId: "std_456", courseId: "crs_102", concepto: "Examen Final", nota: 9.5 },
+                { studentId: "std_789", courseId: "crs_101", concepto: "Parcial 1", nota: 10.0 }
+            ],
+            attendance: [
+                { studentId: "std_456", courseId: "crs_101", fecha: "2026-10-01", estatus: "PRESENTE" },
+                { studentId: "std_456", courseId: "crs_101", fecha: "2026-10-03", estatus: "PRESENTE" },
+                { studentId: "std_456", courseId: "crs_101", fecha: "2026-10-05", estatus: "FALTA" },
+                { studentId: "std_789", courseId: "crs_101", fecha: "2026-10-01", estatus: "PRESENTE" }
+            ],
+            charges: [
+                { id: "cgo_2026_09", studentId: "std_456", desc: "Colegiatura Septiembre 2026", monto: 3500.00, descuento: 500.00, estatus: "PAGADO", vencimiento: "2026-09-10" },
+                { id: "cgo_2026_10", studentId: "std_456", desc: "Colegiatura Octubre 2026", monto: 3500.00, descuento: 0.00, estatus: "PENDIENTE", vencimiento: "2026-10-10" },
+                { id: "cgo_2026_11", studentId: "std_789", desc: "Colegiatura Octubre 2026", monto: 3500.00, descuento: 1000.00, estatus: "PAGADO", vencimiento: "2026-10-10" }
+            ],
+            notifications: [
+                { id: "notif_789", studentId: "std_456", canal: "PUSH", titulo: "Aviso Institucional", mensaje: "Recordatorio: Inicio del período de evaluaciones parciales 2026-2.", fecha: "2026-10-13 08:00" }
+            ]
+        };
+
+        lucide.createIcons();
+
+        function fillCredentials(email, pass) {
+            document.getElementById('login-email').value = email;
+            document.getElementById('login-password').value = pass;
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+            const user = userDatabase.find(u => u.email === email && u.password === password);
+
+            if (user) {
+                state.currentUser = user;
+                state.token = "jwt_rbac_" + user.rol.toLowerCase() + "_" + Math.random().toString(36).substr(2, 6);
+                
+                document.body.classList.remove('items-center', 'justify-center');
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-layout').classList.remove('hidden');
+
+                document.getElementById('user-name').innerText = user.nombre;
+                document.getElementById('user-role').innerText = user.rol;
+                document.getElementById('role-badge').innerText = user.rol;
+                document.getElementById('token-display').innerText = state.token;
+
+                // Aplicar visibilidad de botones y menú según el rol
+                applyRolePermissions();
+
+                renderStudents();
+                renderCourses();
+                renderEnrollments();
+                renderGrades();
+                renderAttendance();
+                renderFinance();
+                renderNotifications();
+
+                showToast(`Inició sesión como [${user.rol}]`);
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        }
+
+        function handleLogout() {
+            state.currentUser = null;
+            state.token = null;
+
+            document.getElementById('app-layout').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.body.classList.add('items-center', 'justify-center');
+            
+            document.getElementById('login-email').value = '';
+            document.getElementById('login-password').value = '';
+            document.getElementById('login-error').classList.add('hidden');
+
+            showToast("👋 Sesión cerrada correctamente.");
+        }
+
+        // MOTOR DE PERMISOS DE VISTA SEGÚN ROL
+        function applyRolePermissions() {
+            const role = state.currentUser.rol;
+
+            // Definición de visibilidad de menú por rol
+            const navMap = {
+                ADMINISTRACION: ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'notifications'],
+                PROFESOR: ['dashboard', 'students', 'courses', 'grades', 'attendance', 'notifications'],
+                FINANZAS: ['dashboard', 'students', 'finance', 'notifications'],
+                ALUMNO: ['courses', 'enrollment', 'grades', 'attendance', 'finance', 'notifications']
+            };
+
+            const allowedTabs = navMap[role] || [];
+            const allTabs = ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'notifications'];
+
+            allTabs.forEach(tab => {
+                const navBtn = document.getElementById(`nav-${tab}`);
+                if (navBtn) {
+                    if (allowedTabs.includes(tab)) {
+                        navBtn.classList.remove('hidden');
+                    } else {
+                        navBtn.classList.add('hidden');
+                    }
+                }
+            });
+
+            // Botones de Acción Restringidos
+            toggleElement('btn-add-student', role === 'ADMINISTRACION');
+            toggleElement('btn-add-course', role === 'ADMINISTRACION');
+            toggleElement('enrollment-form-card', role === 'ADMINISTRACION');
+            toggleElement('grades-form-card', role === 'ADMINISTRACION' || role === 'PROFESOR');
+            toggleElement('attendance-form-card', role === 'ADMINISTRACION' || role === 'PROFESOR');
+            toggleElement('notif-form-card', role !== 'ALUMNO');
+
+            // Ajuste visual de layouts si se ocultan formularios
+            const gradesCard = document.getElementById('grades-card-container');
+            if (gradesCard) {
+                if (role === 'ALUMNO') {
+                    gradesCard.className = "col-span-3 bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4";
+                } else {
+                    gradesCard.className = "md:col-span-2 bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4";
+                }
+            }
+
+            const attCard = document.getElementById('attendance-summary-container');
+            if (attCard) {
+                if (role === 'ALUMNO') {
+                    attCard.className = "col-span-3 bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4";
+                } else {
+                    attCard.className = "md:col-span-2 bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4";
+                }
+            }
+
+            const enrList = document.getElementById('enrollment-list-card');
+            if (enrList) {
+                if (role === 'ALUMNO') {
+                    enrList.className = "col-span-3 bg-slate-800 border border-slate-700 p-6 rounded-xl";
+                } else {
+                    enrList.className = "md:col-span-2 bg-slate-800 border border-slate-700 p-6 rounded-xl";
+                }
+            }
+
+            const notifList = document.getElementById('notif-list-card');
+            if (notifList) {
+                if (role === 'ALUMNO') {
+                    notifList.className = "col-span-3 bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4";
+                } else {
+                    notifList.className = "md:col-span-2 bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4";
+                }
+            }
+
+            // Cambiar a la primera pestaña permitida
+            if (allowedTabs.length > 0) {
+                switchTab(allowedTabs[0]);
+            }
+        }
+
+        function toggleElement(id, show) {
+            const el = document.getElementById(id);
+            if (el) {
+                if (show) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            }
+        }
+
+        function openProfileModal() {
+            const u = state.currentUser;
+            if (!u) return;
+
+            document.getElementById('prof-id').innerText = u.id;
+            document.getElementById('prof-rol').innerText = u.rol;
+            document.getElementById('prof-nombre').innerText = u.nombre;
+            document.getElementById('prof-email').innerText = u.email;
+
+            const permContainer = document.getElementById('prof-permisos');
+            permContainer.innerHTML = u.permisos.map(p => `
+                <span class="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-mono text-xs rounded">${p}</span>
+            `).join('');
+
+            document.getElementById('profile-modal').classList.remove('hidden');
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profile-modal').classList.add('hidden');
+        }
+
+        function switchTab(tabId) {
+            const tabs = ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'notifications', 'nominas'];
+            tabs.forEach(t => {
+                const section = document.getElementById(`tab-${t}`);
+                if (section) section.classList.add('hidden');
+
+                const btn = document.getElementById(`nav-${t}`);
+                if (btn) btn.className = "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200";
+            });
+
+            const activeSection = document.getElementById(`tab-${tabId}`);
+            if (activeSection) activeSection.classList.remove('hidden');
+
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) activeBtn.className = "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition bg-indigo-600 text-white";
+
+            const titles = {
+                dashboard: ['Executive Dashboard', 'Resumen operativo institucional y métricas globales.'],
+                students: ['Directorio de Alumnos', 'Expediente consolidado de la comunidad estudiantil.'],
+                courses: ['Oferta Académica y Horarios', 'Catálogo de materias y asignación de aulas.'],
+                enrollment: ['Inscripciones y Carga Académica', 'Matrícula y asignación de cursos.'],
+                grades: ['Kárdex Académico y Evaluación', 'Boleta oficial de calificaciones y registro de examenes.'],
+                attendance: ['Control de Asistencia', 'Seguimiento de asistencias, inasistencias y retardos.'],
+                finance: ['Estado de Cuenta y Cobros', 'Módulo financiero de colegiaturas y facturación.'],
+                notifications: ['Centro de Notificaciones', 'Comunicados institucionales y avisos directos.'],
+                nominas: ['Servicios de Nóminas (API REST)', 'Consulta de expedientes y contratos laborales desde el sistema de Nóminas (:8000).']
+            };
+            if (titles[tabId]) {
+                document.getElementById('page-title').innerText = titles[tabId][0];
+                document.getElementById('page-subtitle').innerText = titles[tabId][1];
+            }
+            lucide.createIcons();
+        }
+
+        // RENDERIZAR ALUMNOS
+        function renderStudents() {
+            const container = document.getElementById('students-grid');
+            
+            container.innerHTML = state.students.map(s => {
+                const enrolledCount = state.enrollments.filter(e => e.studentId === s.estudianteId).length;
+                const studentGrades = state.grades.filter(g => g.studentId === s.estudianteId);
+                const avg = studentGrades.length ? (studentGrades.reduce((a, b) => a + b.nota, 0) / studentGrades.length).toFixed(2) : "N/A";
+                const faltas = state.attendance.filter(a => a.studentId === s.estudianteId && a.estatus === "FALTA").length;
+                const pendingCharges = state.charges
+                    .filter(c => c.studentId === s.estudianteId && c.estatus === "PENDIENTE")
+                    .reduce((sum, c) => sum + (c.monto - c.descuento), 0);
+
+                const initials = s.nombre.split(' ').map(n => n[0]).join('');
+
+                return `
+                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl space-y-4 shadow-lg">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-xl bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 font-bold flex items-center justify-center text-lg">
+                                    ${initials}
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-white text-base">${s.nombre}</h4>
+                                    <p class="text-xs text-slate-400 font-mono">${s.email}</p>
+                                </div>
+                            </div>
+                            <span class="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-full">
+                                ${s.estatus}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs bg-slate-900/60 p-3 rounded-xl border border-slate-700/60">
+                            <div>
+                                <span class="text-slate-500 uppercase font-semibold">ID Estudiante</span>
+                                <p class="font-mono text-indigo-400 font-bold">${s.estudianteId}</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 uppercase font-semibold">Matrícula</span>
+                                <p class="font-mono text-slate-200">${s.matricula}</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 uppercase font-semibold">Período</span>
+                                <p class="text-slate-200">${s.periodo}</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 uppercase font-semibold">Materias Cursadas</span>
+                                <p class="text-slate-200 font-bold">${enrolledCount} Cursos</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                            <div class="p-2 bg-slate-900/40 rounded-lg border border-slate-700/40">
+                                <span class="text-slate-400">Promedio</span>
+                                <p class="font-bold text-emerald-400 text-sm mt-0.5">${avg}</p>
+                            </div>
+                            <div class="p-2 bg-slate-900/40 rounded-lg border border-slate-700/40">
+                                <span class="text-slate-400">Inasistencias</span>
+                                <p class="font-bold ${faltas >= 3 ? 'text-rose-400' : 'text-slate-200'} text-sm mt-0.5">${faltas} Faltas</p>
+                            </div>
+                            <div class="p-2 bg-slate-900/40 rounded-lg border border-slate-700/40">
+                                <span class="text-slate-400">Saldo Pendiente</span>
+                                <p class="font-bold ${pendingCharges > 0 ? 'text-rose-400' : 'text-emerald-400'} text-sm mt-0.5">$${pendingCharges.toFixed(2)}</p>
+                            </div>
+                        </div>
+
+                        <button onclick="openStudentModal('${s.estudianteId}')" class="w-full py-2 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/30 text-indigo-300 font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1.5">
+                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Ver Expediente Completo
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function openAddStudentModal() {
+            const nextNum = state.students.length + 100;
+            document.getElementById('add-std-id').value = `std_${nextNum}`;
+            document.getElementById('add-std-matricula').value = `2026-EST-${Math.floor(1000 + Math.random() * 9000)}`;
+            document.getElementById('add-student-modal').classList.remove('hidden');
+        }
+
+        function closeAddStudentModal() {
+            document.getElementById('add-student-modal').classList.add('hidden');
+        }
+
+        function handleAddStudent(e) {
+            e.preventDefault();
+            if (state.currentUser.rol !== 'ADMINISTRACION') {
+                showToast("⛔ Acción no permitida para tu rol.");
+                return;
+            }
+
+            const nombre = document.getElementById('add-std-name').value.trim();
+            const email = document.getElementById('add-std-email').value.trim();
+            const estudianteId = document.getElementById('add-std-id').value.trim();
+            const matricula = document.getElementById('add-std-matricula').value.trim();
+            const periodo = document.getElementById('add-std-periodo').value.trim();
+            const estatus = document.getElementById('add-std-estatus').value;
+
+            if (state.students.some(s => s.estudianteId === estudianteId)) {
+                showToast("❌ El ID de estudiante ya existe.");
+                return;
+            }
+
+            state.students.push({ estudianteId, nombre, matricula, periodo, estatus, email });
+            renderStudents();
+            closeAddStudentModal();
+            showToast(`✅ Alumno ${nombre} registrado exitosamente.`);
+            document.getElementById('add-std-name').value = '';
+            document.getElementById('add-std-email').value = '';
+        }
+
+        function filterStudents() {
+            const query = document.getElementById('search-student-input').value.toLowerCase();
+            const filtered = state.students.filter(s => 
+                s.nombre.toLowerCase().includes(query) || 
+                s.estudianteId.toLowerCase().includes(query) ||
+                s.matricula.toLowerCase().includes(query)
+            );
+
+            const container = document.getElementById('students-grid');
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="col-span-2 text-center text-slate-500 py-8">No se encontraron alumnos registrados.</p>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(s => {
+                const enrolledCount = state.enrollments.filter(e => e.studentId === s.estudianteId).length;
+                const studentGrades = state.grades.filter(g => g.studentId === s.estudianteId);
+                const avg = studentGrades.length ? (studentGrades.reduce((a, b) => a + b.nota, 0) / studentGrades.length).toFixed(2) : "N/A";
+                const faltas = state.attendance.filter(a => a.studentId === s.estudianteId && a.estatus === "FALTA").length;
+                const pendingCharges = state.charges.filter(c => c.studentId === s.estudianteId && c.estatus === "PENDIENTE").reduce((sum, c) => sum + (c.monto - c.descuento), 0);
+                const initials = s.nombre.split(' ').map(n => n[0]).join('');
+
+                return `
+                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl space-y-4 shadow-lg">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-xl bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 font-bold flex items-center justify-center text-lg">${initials}</div>
+                                <div>
+                                    <h4 class="font-bold text-white text-base">${s.nombre}</h4>
+                                    <p class="text-xs text-slate-400 font-mono">${s.email}</p>
+                                </div>
+                            </div>
+                            <span class="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-full">${s.estatus}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs bg-slate-900/60 p-3 rounded-xl border border-slate-700/60">
+                            <div><span class="text-slate-500 uppercase font-semibold">ID</span><p class="font-mono text-indigo-400 font-bold">${s.estudianteId}</p></div>
+                            <div><span class="text-slate-500 uppercase font-semibold">Matrícula</span><p class="font-mono text-slate-200">${s.matricula}</p></div>
+                        </div>
+                        <button onclick="openStudentModal('${s.estudianteId}')" class="w-full py-2 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/30 text-indigo-300 font-semibold rounded-xl text-xs transition">Ver Expediente Completo</button>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function openStudentModal(stdId) {
+            const s = state.students.find(st => st.estudianteId === stdId);
+            if (!s) return;
+
+            document.getElementById('std-modal-name').innerText = s.nombre;
+            document.getElementById('std-modal-sub').innerText = `ID: ${s.estudianteId} | Matrícula: ${s.matricula} | Período: ${s.periodo}`;
+
+            const enrolledCourses = state.enrollments
+                .filter(e => e.studentId === stdId)
+                .map(e => state.courses.find(c => c.id === e.courseId))
+                .filter(Boolean);
+
+            const grades = state.grades.filter(g => g.studentId === stdId);
+            const charges = state.charges.filter(c => c.studentId === stdId);
+
+            document.getElementById('std-modal-body').innerHTML = `
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/60 space-y-2">
+                    <h4 class="font-bold text-sm text-indigo-400 flex items-center gap-2">
+                        <i data-lucide="book-open" class="w-4 h-4"></i> Materias Inscritas (${enrolledCourses.length})
+                    </h4>
+                    <ul class="text-xs space-y-1 text-slate-300">
+                        ${enrolledCourses.map(c => `<li>• [${c.id}] <strong>${c.materia}</strong> - Prof:${c.profesor}</li>`).join('') || '<li class="text-slate-500">Sin materias.</li>'}
+                    </ul>
+                </div>
+
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/60 space-y-2">
+                    <h4 class="font-bold text-sm text-emerald-400 flex items-center gap-2">
+                        <i data-lucide="award" class="w-4 h-4"></i> Registro de Calificaciones
+                    </h4>
+                    <ul class="text-xs space-y-1 text-slate-300">
+                        ${grades.map(g => `<li>• ${g.courseId} -${g.concepto}: <strong class="text-white">${g.nota}</strong></li>`).join('') || '<li class="text-slate-500">Sin notas.</li>'}
+                    </ul>
+                </div>
+
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/60 space-y-2">
+                    <h4 class="font-bold text-sm text-amber-400 flex items-center gap-2">
+                        <i data-lucide="wallet" class="w-4 h-4"></i> Cargos y Estado Financiero
+                    </h4>
+                    <ul class="text-xs space-y-1 text-slate-300">
+                        ${charges.map(c => `<li>• [${c.id}]${c.desc} -> <strong class="${c.estatus === 'PAGADO' ? 'text-emerald-400' : 'text-rose-400'}">${c.estatus}</strong> ($${c.monto - c.descuento} MXN)</li>`).join('') || '<li class="text-slate-500">Sin cargos.</li>'}
+                    </ul>
+                </div>
+            `;
+
+            document.getElementById('student-detail-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeStudentModal() {
+            document.getElementById('student-detail-modal').classList.add('hidden');
+        }
+
+        // RENDERIZAR CURSOS
+        function renderCourses() {
+            const tbody = document.getElementById('courses-table-body');
+            tbody.innerHTML = state.courses.map(c => `
+                <tr class="hover:bg-slate-800/60 transition">
+                    <td class="p-4 font-mono text-indigo-400 font-semibold">${c.id}</td>
+                    <td class="p-4 font-medium text-white">
+                        <div>${c.materia}</div>
+                        <div class="text-xs text-indigo-300/80 font-mono mt-0.5"><i data-lucide="clock" class="w-3 h-3 inline mr-1"></i>${c.horario || 'Sin horario'}</div>
+                    </td>
+                    <td class="p-4">${c.grupo}</td>
+                    <td class="p-4">${c.profesor}</td>
+                    <td class="p-4 text-xs text-slate-400">${c.aula}</td>
+                    <td class="p-4 font-bold">${c.creditos}</td>
+                    <td class="p-4"><span class="px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded text-xs">${c.cupoActual}/${c.cupoMaximo}</span></td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+            updateCourseDropdowns();
+        }
+
+        function openAddCourseModal() {
+            const nextNum = state.courses.length + 101;
+            document.getElementById('add-crs-id').value = `crs_${nextNum}`;
+            document.getElementById('add-course-modal').classList.remove('hidden');
+        }
+
+        function closeAddCourseModal() {
+            document.getElementById('add-course-modal').classList.add('hidden');
+        }
+
+        function handleAddCourse(e) {
+            e.preventDefault();
+            if (state.currentUser.rol !== 'ADMINISTRACION') {
+                showToast("⛔ Acción no permitida para tu rol.");
+                return;
+            }
+
+            const id = document.getElementById('add-crs-id').value.trim();
+            const materia = document.getElementById('add-crs-materia').value.trim();
+            const grupo = document.getElementById('add-crs-grupo').value.trim();
+            const profesor = document.getElementById('add-crs-profesor').value.trim();
+            const aula = document.getElementById('add-crs-aula').value.trim();
+            const creditos = parseInt(document.getElementById('add-crs-creditos').value);
+            const cupoMaximo = parseInt(document.getElementById('add-crs-cupo').value);
+            const horario = document.getElementById('add-crs-horario').value.trim();
+
+            if (state.courses.some(c => c.id === id)) {
+                showToast("❌ El ID de curso ya existe.");
+                return;
+            }
+
+            state.courses.push({ id, materia, grupo, profesor, aula, creditos, cupoActual: 0, cupoMaximo, horario });
+            renderCourses();
+            closeAddCourseModal();
+            showToast(`✅ Curso '${materia}' creado exitosamente.`);
+            document.getElementById('add-crs-materia').value = '';
+            document.getElementById('add-crs-grupo').value = '';
+            document.getElementById('add-crs-profesor').value = '';
+            document.getElementById('add-crs-aula').value = '';
+            document.getElementById('add-crs-horario').value = '';
+        }
+
+        function updateCourseDropdowns() {
+            const options = state.courses.map(c => `<option value="${c.id}">${c.id} - ${c.materia}</option>`).join('');
+            const enrSelect = document.getElementById('enr-course-id');
+            const gradeSelect = document.getElementById('grade-crs-id');
+            const attSelect = document.getElementById('att-crs-id');
+
+            if (enrSelect) enrSelect.innerHTML = options;
+            if (gradeSelect) gradeSelect.innerHTML = options;
+            if (attSelect) attSelect.innerHTML = options;
+        }
+
+        function renderEnrollments() {
+            const list = document.getElementById('enrolled-courses-list');
+            const currentStd = state.currentUser && state.currentUser.rol === 'ALUMNO' ? state.currentUser.id : "std_456";
+            
+            const studentCourses = state.enrollments
+                .filter(e => e.studentId === currentStd)
+                .map(e => state.courses.find(c => c.id === e.courseId))
+                .filter(Boolean);
+
+            list.innerHTML = studentCourses.map(c => `
+                <li class="p-4 bg-slate-900/60 rounded-xl border border-slate-700/60 flex justify-between items-center">
+                    <div>
+                        <span class="font-bold text-white">${c.materia}</span>
+                        <p class="text-xs text-slate-400">Prof: ${c.profesor} | ${c.horario}</p>
+                    </div>
+                    <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xs rounded-full border border-emerald-500/20">Inscrito (${c.creditos} cr)</span>
+                </li>
+            `).join('') || '<p class="text-xs text-slate-500">Sin cursos matriculados.</p>';
+        }
+
+        function handleEnrollment(e) {
+            e.preventDefault();
+            if (state.currentUser.rol !== 'ADMINISTRACION') {
+                showToast("⛔ Acción reservada para Control Escolar.");
+                return;
+            }
+
+            const stdId = document.getElementById('enr-student-id').value;
+            const crsId = document.getElementById('enr-course-id').value;
+
+            const exists = state.enrollments.some(e => e.studentId === stdId && e.courseId === crsId);
+            if (exists) {
+                showToast("❌ El estudiante ya está inscrito en este curso.");
+                return;
+            }
+
+            state.enrollments.push({ studentId: stdId, courseId: crsId });
+            renderEnrollments();
+            renderStudents();
+            showToast("✅ Inscripción procesada por Administración.");
+        }
+
+        function renderGrades() {
+            const container = document.getElementById('report-card-container');
+            const currentStd = state.currentUser && state.currentUser.rol === 'ALUMNO' ? state.currentUser.id : "std_456";
+            
+            const userGrades = state.grades.filter(g => g.studentId === currentStd);
+            const grouped = {};
+
+            userGrades.forEach(g => {
+                if (!grouped[g.courseId]) grouped[g.courseId] = [];
+                grouped[g.courseId].push(g);
+            });
+
+            let totalSum = 0;
+            let courseCount = 0;
+            let html = '';
+
+            for (const [crsId, gradesList] of Object.entries(grouped)) {
+                const course = state.courses.find(c => c.id === crsId);
+                const avg = gradesList.reduce((acc, curr) => acc + curr.nota, 0) / gradesList.length;
+                totalSum += avg;
+                courseCount++;
+
+                html += `
+                    <div class="p-4 bg-slate-900/60 rounded-xl border border-slate-700/60 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-white">${course ? course.materia : crsId}</h4>
+                            <span class="text-sm font-bold text-indigo-400">Promedio: ${avg.toFixed(2)}</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Notas: ${gradesList.map(g => `${g.concepto}: <strong class="text-slate-200">${g.nota}</strong>`).join(' | ')}</p>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html || '<p class="text-xs text-slate-500">No hay calificaciones registradas.</p>';
+            if (courseCount > 0) {
+                document.getElementById('gpa-display').innerText = (totalSum / courseCount).toFixed(2);
+            }
+        }
+
+        function handleAddGrade(e) {
+            e.preventDefault();
+            if (state.currentUser.rol !== 'ADMINISTRACION' && state.currentUser.rol !== 'PROFESOR') {
+                showToast("⛔ Solo profesores o administradores pueden calificar.");
+                return;
+            }
+
+            const stdId = document.getElementById('grade-std-id').value;
+            const crsId = document.getElementById('grade-crs-id').value;
+            const concepto = document.getElementById('grade-concept').value;
+            const nota = parseFloat(document.getElementById('grade-val').value);
+
+            state.grades.push({ studentId: stdId, courseId: crsId, concepto, nota });
+            renderGrades();
+            renderStudents();
+            showToast(`✅ Nota de ${nota} guardada.`);
+            document.getElementById('grade-concept').value = '';
+        }
+
+        function renderAttendance() {
+            const currentStd = state.currentUser && state.currentUser.rol === 'ALUMNO' ? state.currentUser.id : "std_456";
+            const userAtt = state.attendance.filter(a => a.studentId === currentStd);
+
+            let pres = 0, faltas = 0, ret = 0;
+            userAtt.forEach(a => {
+                if(a.estatus === "PRESENTE") pres++;
+                else if(a.estatus === "FALTA") faltas++;
+                else if(a.estatus === "RETARDO") ret++;
+            });
+
+            document.getElementById('attendance-summary-cards').innerHTML = `
+                <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                    <span class="text-xs text-emerald-400 uppercase font-semibold">Presentes</span>
+                    <p class="text-2xl font-bold text-emerald-400 mt-1">${pres}</p>
+                </div>
+                <div class="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl">
+                    <span class="text-xs text-rose-400 uppercase font-semibold">Faltas</span>
+                    <p class="text-2xl font-bold text-rose-400 mt-1">${faltas}</p>
+                </div>
+                <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                    <span class="text-xs text-amber-400 uppercase font-semibold">Retardos</span>
+                    <p class="text-2xl font-bold text-amber-400 mt-1">${ret}</p>
+                </div>
+            `;
+
+            document.getElementById('attendance-history-list').innerHTML = userAtt.map(a => `
+                <li class="p-2 bg-slate-800 rounded flex justify-between items-center">
+                    <span>${a.fecha} - ${a.courseId}</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${a.estatus === 'PRESENTE' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${a.estatus}</span>
+                </li>
+            `).join('') || '<p class="text-xs text-slate-500">Sin asistencias registradas.</p>';
+        }
+
+        function handleAttendance(e) {
+            e.preventDefault();
+            if (state.currentUser.rol !== 'ADMINISTRACION' && state.currentUser.rol !== 'PROFESOR') {
+                showToast("⛔ Permiso denegado para registrar asistencia.");
+                return;
+            }
+
+            const stdId = document.getElementById('att-std-id').value;
+            const crsId = document.getElementById('att-crs-id').value;
+            const estatus = document.getElementById('att-status').value;
+            const fecha = new Date().toISOString().substring(0, 10);
+
+            state.attendance.push({ studentId: stdId, courseId: crsId, fecha, estatus });
+            renderAttendance();
+            renderStudents();
+            showToast(`✅ Asistencia de ${estatus} registrada.`);
+        }
+
+        function renderFinance() {
+            const list = document.getElementById('finance-charges-list');
+            const currentStd = state.currentUser && state.currentUser.rol === 'ALUMNO' ? state.currentUser.id : null;
+            
+            // Si es alumno, ver solo sus cargos. Si es finanzas o admin, ver todos.
+            const displayCharges = currentStd ? state.charges.filter(c => c.studentId === currentStd) : state.charges;
+
+            let pendingTotal = 0;
+
+            list.innerHTML = displayCharges.map(c => {
+                const neto = c.monto - c.descuento;
+                if (c.estatus === "PENDIENTE") pendingTotal += neto;
+
+                const canPay = state.currentUser.rol === 'FINANZAS' || state.currentUser.rol === 'ADMINISTRACION';
+
+                return `
+                    <div class="p-4 bg-slate-900/60 rounded-xl border border-slate-700/60 flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-white">[${c.id}] ${c.desc} (${c.studentId})</span>
+                            <p class="text-xs text-slate-400">Vence: ${c.vencimiento} | Monto Neto: $${neto.toFixed(2)} MXN</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-1 text-xs rounded-full ${c.estatus === 'PAGADO' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">${c.estatus}</span>
+                    ${c.estatus === 'PENDIENTE' && canPay ? `<button onclick="processPayment('${c.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-lg transition-colors">Cobrar</button>` : ''}
+                    ${canPay ? `<button onclick="timbrarFacturaProfact('${c.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg transition-colors shadow">Timbrar CFDI</button>` : ''}
+                </div>
+                    </div>
+                `;
+            }).join('') || '<p class="text-xs text-slate-500">Sin cargos registrados.</p>';
+
+            document.getElementById('total-pending-balance').innerText = `$${pendingTotal.toFixed(2)} MXN`;
+        }
+
+        function processPayment(chargeId) {
+            if (state.currentUser.rol !== 'FINANZAS' && state.currentUser.rol !== 'ADMINISTRACION') {
+                showToast("⛔ Solo el área de Finanzas/Caja puede autorizar cobros.");
+                return;
+            }
+
+            const charge = state.charges.find(c => c.id === chargeId);
+            if (charge) {
+                charge.estatus = "PAGADO";
+                const invId = `inv_${Math.floor(1000 + Math.random() * 9000)}`;
+                
+                state.notifications.unshift({
+                    id: `notif_${Date.now().toString().slice(-3)}`,
+                    studentId: charge.studentId,
+                    canal: "SMS",
+                    titulo: "Pago Confirmado",
+                    mensaje: `Su pago de $${charge.monto - charge.descuento} MXN fue abonado. Factura: ${invId}`,
+                    fecha: new Date().toLocaleString()
+                });
+
+                renderFinance();
+                renderStudents();
+                renderNotifications();
+                showToast(`✅ Pago abonado por Caja. Factura emitida: ${invId}`);
+            }
+        }
+
+        function renderNotifications() {
+            const container = document.getElementById('notifications-list');
+            const currentStd = state.currentUser && state.currentUser.rol === 'ALUMNO' ? state.currentUser.id : null;
+            
+            const userNotifs = currentStd ? state.notifications.filter(n => n.studentId === currentStd) : state.notifications;
+
+            container.innerHTML = userNotifs.map(n => `
+                <div class="p-4 bg-slate-900/60 rounded-xl border border-slate-700/60 flex items-start gap-3">
+                    <div class="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg text-xs font-bold font-mono uppercase">${n.canal}</div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-white text-sm">${n.titulo} (${n.studentId})</h4>
+                            <span class="text-xs text-slate-500">${n.fecha}</span>
+                        </div>
+                        <p class="text-xs text-slate-300 mt-1">${n.mensaje}</p>
+                    </div>
+                </div>
+            `).join('') || '<p class="text-xs text-slate-500">Sin avisos pendientes.</p>';
+        }
+
+        function handleSendNotification(e) {
+            e.preventDefault();
+            if (state.currentUser.rol === 'ALUMNO') {
+                showToast("⛔ Los alumnos no pueden emitir boletines masivos.");
+                return;
+            }
+
+            const stdId = document.getElementById('notif-std-id').value;
+            const canal = document.getElementById('notif-channel').value;
+            const titulo = document.getElementById('notif-title').value;
+            const mensaje = document.getElementById('notif-msg').value;
+
+            state.notifications.unshift({
+                id: `notif_${Date.now().toString().slice(-3)}`,
+                studentId: stdId,
+                canal,
+                titulo,
+                mensaje,
+                fecha: new Date().toLocaleString()
+            });
+
+            renderNotifications();
+            showToast("📩 Notificación institucional enviada.");
+            document.getElementById('notif-title').value = '';
+            document.getElementById('notif-msg').value = '';
+        }
+
+        function exportReport(format) {
+            showToast(`📄 Generando 'Reporte_Institucional_2026-2.${format.toLowerCase()}'...`);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+    
+        // ==========================================
+        // CONSUMO DE SERVICIOS DE NÓMINAS (API REST)
+        // ==========================================
+        function guardarUrlNominas() {
+            const val = document.getElementById('nominas-server-url').value.trim();
+            localStorage.setItem('nominas_api_url', val);
+            showToast('IP de Nóminas guardada: ' + val);
+        }
+
+        async function consultarDocenteNominas() {
+            const query = (document.getElementById('nominas-docente-search')?.value || '').trim();
+            const box = document.getElementById('nominas-docente-result');
+            box.innerHTML = '<span class="text-indigo-400 animate-pulse">Consultando EmpleadoService en Nóminas (:8000)...</span>';
+            try {
+                const base = (document.getElementById('nominas-server-url')?.value.trim() || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+                const resp = await fetch(`${base}/api/external/docente?query=${encodeURIComponent(query)}`);
+                const data = await resp.json();
+                if (!resp.ok || !data.encontrado) throw new Error(data.error || 'Docente no encontrado');
+                box.innerHTML = `
+                    <div class="w-full space-y-2 text-slate-200 text-left">
+                        <div class="flex items-center justify-between pb-1 border-b border-slate-700">
+                            <strong class="text-emerald-400 text-sm">${data.nombre_completo}</strong>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${data.activo ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
+                                ${data.activo ? '● ACTIVO EN NÓMINAS' : '○ INACTIVO'}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-[11px]">
+                            <div><span class="text-slate-400">ID Empleado:</span> <span class="font-mono text-white">#${data.id}</span></div>
+                            <div><span class="text-slate-400">RFC:</span> <span class="font-mono text-white">${data.rfc}</span></div>
+                            <div><span class="text-slate-400">CURP:</span> <span class="font-mono text-white">${data.curp || '—'}</span></div>
+                            <div><span class="text-slate-400">Puesto:</span> <span class="text-white">${data.puesto || '—'}</span></div>
+                            <div><span class="text-slate-400">Correo:</span> <span class="text-white">${data.correo || '—'}</span></div>
+                            <div><span class="text-slate-400">Salario:</span> <span class="text-emerald-300 font-bold">$${Number(data.salario || 0).toLocaleString('es-MX', {minimumFractionDigits:2})} MXN</span></div>
+                        </div>
+                        <p class="text-[10px] text-emerald-400/80 pt-1 border-t border-slate-800">✓ Validado con la base de datos nominas.db</p>
+                    </div>
+                `;
+            } catch(err) {
+                box.innerHTML = `
+                    <div class="text-center text-rose-400 space-y-1">
+                        <p class="font-bold">❌ Error al conectar con Nóminas</p>
+                        <p class="text-[11px] text-slate-400">${err.message}</p>
+                        <p class="text-[10px] text-slate-500">Verifica que tu compañero tenga iniciado 'python web.py' en su laptop.</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function consultarContratoNominas() {
+            const id = (document.getElementById('nominas-contrato-id')?.value || '').trim();
+            const box = document.getElementById('nominas-contrato-result');
+            box.innerHTML = '<span class="text-indigo-400 animate-pulse">Consultando ContratoService en Nóminas (:8000)...</span>';
+            try {
+                const base = (document.getElementById('nominas-server-url')?.value.trim() || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+                const resp = await fetch(`${base}/api/external/contrato?empleado_id=${encodeURIComponent(id)}`);
+                const data = await resp.json();
+                if (!resp.ok || !data.encontrado) throw new Error(data.error || 'Contrato no encontrado');
+                box.innerHTML = `
+                    <div class="w-full space-y-2 text-slate-200 text-left">
+                        <div class="flex items-center justify-between pb-1 border-b border-slate-700">
+                            <strong class="text-emerald-400 text-sm">Contrato #${data.id} (Empleado #${data.empleado_id})</strong>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">
+                                ● CONTRATO VIGENTE
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-[11px]">
+                            <div><span class="text-slate-400">Tipo de Contrato:</span> <span class="font-semibold text-white">${data.tipo_contrato}</span></div>
+                            <div><span class="text-slate-400">Jornada:</span> <span class="text-white">${data.tipo_jornada}</span></div>
+                            <div><span class="text-slate-400">Inicio:</span> <span class="font-mono text-white">${data.fecha_inicio}</span></div>
+                            <div><span class="text-slate-400">Fin:</span> <span class="font-mono text-white">${data.fecha_fin || 'Indefinido'}</span></div>
+                            <div><span class="text-slate-400">Sueldo Mensual:</span> <span class="text-emerald-300 font-bold">$${Number(data.salario_mensual || 0).toLocaleString('es-MX', {minimumFractionDigits:2})} MXN</span></div>
+                            <div><span class="text-slate-400">Condiciones:</span> <span class="text-slate-300">${data.condiciones || 'Estándar'}</span></div>
+                        </div>
+                        <p class="text-[10px] text-emerald-400/80 pt-1 border-t border-slate-800">✓ Información laboral certificada por ContratoService</p>
+                    </div>
+                `;
+            } catch(err) {
+                box.innerHTML = `
+                    <div class="text-center text-rose-400 space-y-1">
+                        <p class="font-bold">❌ Error al consultar contrato</p>
+                        <p class="text-[11px] text-slate-400">${err.message}</p>
+                        <p class="text-[10px] text-slate-500">Verifica que tu compañero tenga iniciado 'python web.py' en su laptop.</p>
+                    </div>
+                `;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem('nominas_api_url');
+            if (saved && document.getElementById('nominas-server-url')) {
+                document.getElementById('nominas-server-url').value = saved;
+            }
+        });
+/**
+ * Envía el CFDI del cargo a timbrar en el backend (Profact v2.0)
+ */
+async function timbrarFacturaProfact(chargeId) {
+    const apiKeyInput = prompt("Ingrese su Token de Integrador de Profact:", "mvpNUXmQfK8=");
+    if (apiKeyInput === null) return; // Si cancela el prompt
+
+    // XML con catálogo oficial de prueba SAT / Profact (RFC Emisor de prueba: EKU9003173C9)
+    const xmlEjemplo = `<?xml version="1.0" encoding="UTF-8"?>
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd" Version="4.0" Serie="F" Folio="${chargeId}" Fecha="2026-11-05T12:00:00" Sello="TEST" FormaPago="01" NoCertificado="30001000000500003416" Certificado="TEST" SubTotal="1000.00" Moneda="MXN" Total="1000.00" TipoDeComprobante="I" Exportacion="01" MetodoPago="PUE" LugarExpedicion="64000">
+    <cfdi:Emisor Rfc="EKU9003173C9" Nombre="ESCUELA KEMPER URGATE" RegimenFiscal="601"/>
+    <cfdi:Receptor Rfc="URE1804294R6" Nombre="UNIVERSIDAD DE REHABILITACION" DomicilioFiscalReceptor="64000" RegimenFiscalReceptor="601" UsoCFDI="G03"/>
+    <cfdi:Conceptos>
+        <cfdi:Concepto ClaveProdServ="86121500" NoIdentificacion="COL01" Cantidad="1.00" ClaveUnidad="E48" Unidad="Servicio" Descripcion="Colegiatura Estudiantil ${chargeId}" ValorUnitario="1000.00" Importe="1000.00" ObjetoImp="01"/>
+    </cfdi:Conceptos>
+</cfdi:Comprobante>`;
+
+    // Convertir el XML a Base64
+    const xmlBase64 = btoa(unescape(encodeURIComponent(xmlEjemplo)));
+
+    try {
+        const response = await fetch('http://localhost:8081/api/finance/timbrar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                xmlBase64: xmlBase64,
+                apiKey: apiKeyInput
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert('¡Respuesta de Profact v2.0 recibida!\n\n' + JSON.stringify(data, null, 2));
+            console.log('Resultado Profact:', data);
+        } else {
+            alert('Error en timbrado Profact: ' + (data.error || JSON.stringify(data)));
+        }
+    } catch (error) {
+        console.error('Error al solicitar el timbrado:', error);
+        alert('No se pudo conectar con el endpoint HTTP escolar en el puerto 8081.');
+    }
+}
+    </script>
+</body>
+</html>
