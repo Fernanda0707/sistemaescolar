@@ -566,32 +566,16 @@ class FinanceService {
     // ==========================================
     // INTEGRACIÓN CON PROFACT (TIMBRADO CFDI v2.0)
     // ==========================================
-    private static final String PROFACT_TIMBRADO_URL = "https://pruebas.timbracfdi33.mx:1444/api/v2.0/Timbrado/TimbraCFDI";
-
     /**
-     * Envía el XML en Base64 al servicio de Profact v2.0 para su timbrado.
+     * Compatibilidad con el código anterior: token enviado desde el cliente no se utiliza.
+     * Las credenciales se obtienen solamente de variables de entorno del servidor.
      */
     public String timbrarCFDIProfact(String xmlBase64, String token) throws Exception {
-        // En la API v2.0 de Profact, el XML en Base64 se envía en la propiedad param1
-        String cleanBase64 = xmlBase64.replaceAll("[\\r\\n]", "");
-        String jsonBody = String.format("{\"param1\":\"%s\"}", cleanBase64);
-
-        java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
-        java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                .uri(java.net.URI.create(PROFACT_TIMBRADO_URL))
-                .header("Content-Type", "application/json")
-                .header("Accept", "application/json")
-                .header("Authorization", "Bearer " + token)
-                .POST(java.net.http.HttpRequest.BodyPublishers.ofString(jsonBody))
-                .build();
-
-        java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
-
-        if (response.statusCode() == 200 || response.statusCode() == 201) {
-            return response.body();
-        } else {
-            return String.format("{\"codigo\":\"200\", \"mensaje\":\"CFDI procesado por servidor backend\", \"uuid\":\"4A9B8C7D-1234-5678-90AB-CDEF12345678\", \"estado\":\"TIMBRADO_EXITOSO\", \"pacStatus\":%d}", response.statusCode());
+        ProfactClient.Result result = new ProfactClient().timbrar(xmlBase64);
+        if (result.httpStatus < 200 || result.httpStatus >= 300) {
+            throw new java.io.IOException("Profact devolvio HTTP " + result.httpStatus);
         }
+        return result.body;
     }
 }
 
