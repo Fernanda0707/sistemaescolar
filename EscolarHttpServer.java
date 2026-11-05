@@ -272,7 +272,19 @@ public class EscolarHttpServer {
                 sendJsonResponse(exchange, 405, "{\"error\":\"Metodo no permitido. Use POST.\"}");
                 return;
             }
-            // No aceptar credenciales desde el navegador: solo variables de entorno del servidor.
+            // Los entornos reales requieren una clave interna del servidor.
+            String mode = System.getenv().getOrDefault("PROFACT_MODE", "mock");
+            if (!"mock".equalsIgnoreCase(mode)) {
+                String expected = System.getenv("PROFACT_INTERNAL_API_KEY");
+                String provided = exchange.getRequestHeaders().getFirst("X-Internal-Api-Key");
+                if (expected == null || expected.isBlank() || provided == null ||
+                        !java.security.MessageDigest.isEqual(
+                            expected.getBytes(StandardCharsets.UTF_8),
+                            provided.getBytes(StandardCharsets.UTF_8))) {
+                    sendJsonResponse(exchange, 403, "{\"error\":\"Acceso denegado a timbrado real\"}");
+                    return;
+                }
+            }
             try {
                 String body = readRequestBody(exchange);
                 Map<String, String> data = parseSimpleJson(body);
@@ -295,7 +307,7 @@ public class EscolarHttpServer {
     private static void setCORSHeaders(HttpExchange exchange) {
         exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
         exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Internal-Api-Key");
     }
 
     private static void sendJsonResponse(HttpExchange exchange, int statusCode, String jsonResponse) throws IOException {
