@@ -430,9 +430,15 @@
                             </div>
                         </div>
                         <div class="text-xs text-slate-500">
-                            <p>🔒 Control RBAC: Solo el personal de Finanzas / Caja puede validar facturas y registrar cobros.</p>
+                            <p>🔒 Solo Finanzas / Caja y Administración pueden utilizar Timbrar CFDI. Los pagos de esta pantalla son demostrativos.</p>
                         </div>
                     </div>
+                </div>
+                <div class="bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-3">
+                    <h3 class="font-bold text-lg">Historial de pagos simulados</h3>
+                    <p class="text-xs text-amber-400">Solo demostración. Sin cobros reales ni facturas fiscales.</p>
+                    <div id="payment-demo-history" class="space-y-2 text-sm text-slate-300"></div>
+                    <p class="text-xs text-slate-500">Datos guardados únicamente en este navegador (localStorage).</p>
                 </div>
             </section>
 
@@ -1796,45 +1802,34 @@
  * Envía el CFDI del cargo a timbrar en el backend (Profact v2.0)
  */
 async function timbrarFacturaProfact(chargeId) {
-    const apiKeyInput = prompt("Ingrese su Token de Integrador de Profact:", "mvpNUXmQfK8=");
-    if (apiKeyInput === null) return; // Si cancela el prompt
-
-    // XML con catálogo oficial de prueba SAT / Profact (RFC Emisor de prueba: EKU9003173C9)
-    const xmlEjemplo = `<?xml version="1.0" encoding="UTF-8"?>
-<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd" Version="4.0" Serie="F" Folio="${chargeId}" Fecha="2026-11-05T12:00:00" Sello="TEST" FormaPago="01" NoCertificado="30001000000500003416" Certificado="TEST" SubTotal="1000.00" Moneda="MXN" Total="1000.00" TipoDeComprobante="I" Exportacion="01" MetodoPago="PUE" LugarExpedicion="64000">
-    <cfdi:Emisor Rfc="EKU9003173C9" Nombre="ESCUELA KEMPER URGATE" RegimenFiscal="601"/>
-    <cfdi:Receptor Rfc="URE1804294R6" Nombre="UNIVERSIDAD DE REHABILITACION" DomicilioFiscalReceptor="64000" RegimenFiscalReceptor="601" UsoCFDI="G03"/>
-    <cfdi:Conceptos>
-        <cfdi:Concepto ClaveProdServ="86121500" NoIdentificacion="COL01" Cantidad="1.00" ClaveUnidad="E48" Unidad="Servicio" Descripcion="Colegiatura Estudiantil ${chargeId}" ValorUnitario="1000.00" Importe="1000.00" ObjetoImp="01"/>
-    </cfdi:Conceptos>
-</cfdi:Comprobante>`;
-
-    // Convertir el XML a Base64
-    const xmlBase64 = btoa(unescape(encodeURIComponent(xmlEjemplo)));
-
+    const charge = state.charges.find(c => c.id === chargeId);
+    if (!state.currentUser || !['FINANZAS','ADMINISTRACION'].includes(state.currentUser.rol)) {
+        showToast('Solo Finanzas y Administración pueden solicitar timbrado.'); return;
+    }
+    if (!charge || charge.estatus !== 'PAGADO') {
+        showToast('Primero debe existir un pago confirmado.'); return;
+    }
+    // El botón conserva la integración con el endpoint Profact; el XML de esta
+    // pantalla es solo para probar MOCK. No incluir tokens en el navegador.
+    const xmlDemo = '<?xml version="1.0" encoding="UTF-8"?><PruebaProfact cargo="' +
+        chargeId + '">SIMULACION_LOCAL_NO_CFDI</PruebaProfact>';
+    const xmlBase64 = btoa(xmlDemo);
     try {
         const response = await fetch('http://localhost:8081/api/finance/timbrar', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                xmlBase64: xmlBase64,
-                apiKey: apiKeyInput
-            })
+            headers: {'Content-Type':'application/json'},
+            body:JSON.stringify({xmlBase64})
         });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            alert('¡Respuesta de Profact v2.0 recibida!\n\n' + JSON.stringify(data, null, 2));
-            console.log('Resultado Profact:', data);
+        const result = await response.json();
+        if (response.ok && result.simulado === true) {
+            showToast('✅ Solicitud CFDI simulada. NO se emitió factura fiscal.');
+        } else if (response.status === 403) {
+            alert('Timbrado real bloqueado desde el navegador. Para QA/producción se requiere un CFDI 4.0 válido y una llamada autorizada desde el backend; no coloques tokens en el frontend.');
         } else {
-            alert('Error en timbrado Profact: ' + (data.error || JSON.stringify(data)));
+            alert('Profact respondió sin timbrado confirmado: ' + JSON.stringify(result));
         }
     } catch (error) {
-        console.error('Error al solicitar el timbrado:', error);
-        alert('No se pudo conectar con el endpoint HTTP escolar en el puerto 8081.');
+        showToast('No se pudo conectar con el backend escolar (puerto 8081).');
     }
 }
     </script>
