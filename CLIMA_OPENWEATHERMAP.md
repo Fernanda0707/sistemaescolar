@@ -39,3 +39,21 @@ Fuentes:
 - https://openweathermap.org/api/current
 - https://openweathermap.org/api/weathermaps
 - https://leafletjs.com/
+
+
+## Corrección del mapa base con error 403
+
+Si aparecen mosaicos con `403 Access blocked` y la leyenda sobre la política de OpenStreetMap, **no abras `index.html` haciendo doble clic** desde el Explorador de Windows (`file://`). Esto puede causar solicitudes de mapas sin el encabezado Referer esperado por el proveedor.
+
+Ahora el servidor Java publica la interfaz directamente en **http://localhost:8081/**. Con `OPENWEATHER_API_KEY` configurada, compila y ejecuta:
+
+```powershell
+javac -encoding UTF-8 Main.java ProfactClient.java WeatherHandler.java EscolarHttpServer.java
+java EscolarHttpServer
+```
+
+Después visita **http://localhost:8081/** en Edge o Chrome. Pulsa `Ctrl+F5` y vuelve a **Mapa del clima**. La ruta es distinta de `D:\...\index.html`, lo cual es intencional. No desactives Referer, no uses trucos para eludir bloqueos ni descargues masivamente mosaicos.
+
+Si persiste el 403, el servidor de mapas puede haber bloqueado temporalmente tu origen/red. Debe cambiarse a un proveedor de mapas base autorizado (con su propia cuenta/API key) en lugar de intentar eludir la política. El API de OpenWeatherMap que devuelve los indicadores meteorológicos es independiente del mapa base.
+
+Política oficial: https://operations.osmfoundation.org/policies/tiles/
