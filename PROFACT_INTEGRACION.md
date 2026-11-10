@@ -68,3 +68,18 @@ El cliente envía `XmlComprobanteBase64` a la API oficial mediante Bearer. Se pr
 - Emisores y CSD: https://developers.timbracfdi33.mx/docs/registro-de-emisores-1
 
 **Importante:** la conectividad con cuentas reales no se ha comprobado hasta disponer de credenciales de QA/producción e información fiscal del emisor.
+
+
+## Interfaz de pagos en Finanzas (demostración)
+
+En `index.html`, iniciar sesión como Finanzas/Caja o como alumno y abrir **Estado de Cuenta**:
+
+1. Para un cargo **PENDIENTE**, pulsar **Pagar (demo)**.
+2. Elegir tarjeta de prueba, transferencia de prueba o efectivo de prueba (sin datos bancarios).
+3. Pulsar **Confirmar pago demo**.
+4. Verificar el estado **PAGADO**, el saldo actualizado y el historial **Historial de pagos simulados**.
+5. Iniciar sesión como personal de Finanzas y pulsar **Timbrar CFDI** sobre un cargo pagado. Con el backend en `PROFACT_MODE=mock`, la respuesta es una simulación sin UUID fiscal.
+
+Los pagos de prueba se guardan solo en `localStorage` del navegador; no se registran en servidor, no procesan tarjetas ni transfieren dinero. No son comprobantes fiscales. Para volver al estado de prueba inicial, borrar la clave `sistemaescolar_pagos_demo_v1` desde Herramientas del desarrollador > Application > Local storage (o limpiar los datos del sitio).
+
+**QA y producción:** el botón web no envía tokens ni claves internas; para timbrado real se debe implementar un flujo autenticado del backend que prepare un XML CFDI válido, verifique el pago real con el proveedor, confirme el timbrado y persista UUID/XML. No introducir tokens en la interfaz.
