@@ -55,6 +55,9 @@ public class EscolarHttpServer {
         // 5. Endpoint de Facturación: Timbrado CFDI Profact v2.0
         server.createContext("/api/finance/timbrar", new ProfactTimbradoHandler());
 
+        // Clima local en Durango: datos y capas de OpenWeatherMap mediante proxy seguro.
+        server.createContext("/api/weather/", new WeatherHandler());
+
         server.setExecutor(null); // default executor
         server.start();
         System.out.println("============================================================");
@@ -64,6 +67,7 @@ public class EscolarHttpServer {
         System.out.println("   - GET  http://localhost:" + PORT + "/api/nominas/docente?query=...");
         System.out.println("   - GET  http://localhost:" + PORT + "/api/nominas/contrato?empleado_id=...");
         System.out.println("   - POST http://localhost:" + PORT + "/api/finance/timbrar");
+        System.out.println("   - GET  http://localhost:" + PORT + "/api/weather/current");
         System.out.println("============================================================");
     }
 
