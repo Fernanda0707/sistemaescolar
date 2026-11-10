@@ -53,7 +53,7 @@ public class EscolarHttpServer {
         server.createContext("/api/nominas/contrato", new NominasContratoHandler(httpClient));
 
         // 5. Endpoint de Facturación: Timbrado CFDI Profact v2.0
-        server.createContext("/api/finance/timbrar", new ProfactTimbradoHandler(financeService));
+        server.createContext("/api/finance/timbrar", new ProfactTimbradoHandler());
 
         server.setExecutor(null); // default executor
         server.start();
@@ -259,11 +259,7 @@ public class EscolarHttpServer {
      * Handler para timbrar CFDI mediante Profact v2.0
      */
     static class ProfactTimbradoHandler implements HttpHandler {
-        private final FinanceService financeService;
-
-        public ProfactTimbradoHandler(FinanceService financeService) {
-            this.financeService = financeService;
-        }
+        private final ProfactClient profactClient = new ProfactClient();
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
@@ -272,29 +268,34 @@ public class EscolarHttpServer {
                 exchange.sendResponseHeaders(204, -1);
                 return;
             }
-
             if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-                sendJsonResponse(exchange, 405, "{\"error\": \"Método no permitido. Use POST.\"}");
+                sendJsonResponse(exchange, 405, "{\"error\":\"Metodo no permitido. Use POST.\"}");
                 return;
             }
-
+            // Los entornos reales requieren una clave interna del servidor.
+            String mode = System.getenv().getOrDefault("PROFACT_MODE", "mock");
+            if (!"mock".equalsIgnoreCase(mode)) {
+                String expected = System.getenv("PROFACT_INTERNAL_API_KEY");
+                String provided = exchange.getRequestHeaders().getFirst("X-Internal-Api-Key");
+                if (expected == null || expected.isBlank() || provided == null ||
+                        !java.security.MessageDigest.isEqual(
+                            expected.getBytes(StandardCharsets.UTF_8),
+                            provided.getBytes(StandardCharsets.UTF_8))) {
+                    sendJsonResponse(exchange, 403, "{\"error\":\"Acceso denegado a timbrado real\"}");
+                    return;
+                }
+            }
             try {
                 String body = readRequestBody(exchange);
                 Map<String, String> data = parseSimpleJson(body);
-
                 String xmlBase64 = data.getOrDefault("xmlBase64", "");
-                String apiKey = data.getOrDefault("apiKey", "DEMO_KEY");
-
-                if (xmlBase64.isBlank()) {
-                    sendJsonResponse(exchange, 400, "{\"error\": \"El campo 'xmlBase64' es requerido.\"}");
-                    return;
-                }
-
-                String respuestaProfact = financeService.timbrarCFDIProfact(xmlBase64, apiKey);
-                sendJsonResponse(exchange, 200, respuestaProfact);
-
+                ProfactClient.Result result = profactClient.timbrar(xmlBase64);
+                sendJsonResponse(exchange, result.httpStatus, result.body);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                sendJsonResponse(exchange, 503, "{\"error\":\"Solicitud interrumpida\"}");
             } catch (Exception e) {
-                sendJsonResponse(exchange, 500, "{\"error\": \"" + escapeJson(e.getMessage()) + "\"}");
+                sendJsonResponse(exchange, 502, "{\"error\":\"No fue posible comunicarse con Profact\"}");
             }
         }
     }
@@ -306,7 +307,7 @@ public class EscolarHttpServer {
     private static void setCORSHeaders(HttpExchange exchange) {
         exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
         exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Internal-Api-Key");
     }
 
     private static void sendJsonResponse(HttpExchange exchange, int statusCode, String jsonResponse) throws IOException {
