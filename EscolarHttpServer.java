@@ -40,6 +40,34 @@ public class EscolarHttpServer {
     public void start() throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
 
+        // Servir la interfaz desde HTTP evita abrirla como file:// (sin Referer valido).
+        // Solo se expone index.html; nunca exponer el directorio entero ni claves.
+        server.createContext("/", exchange -> {
+            String path = exchange.getRequestURI().getPath();
+            if (!"/".equals(path) && !"/index.html".equals(path)) {
+                sendJsonResponse(exchange, 404, "{\"error\":\"Pagina no encontrada\"}");
+                return;
+            }
+            if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendJsonResponse(exchange, 405, "{\"error\":\"Solo GET\"}");
+                return;
+            }
+            try {
+                java.nio.file.Path file = java.nio.file.Path.of("index.html");
+                if (!java.nio.file.Files.isRegularFile(file)) {
+                    sendJsonResponse(exchange, 404, "{\"error\":\"No se encontro index.html en la carpeta actual\"}");
+                    return;
+                }
+                byte[] html = java.nio.file.Files.readAllBytes(file);
+                exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
+                exchange.getResponseHeaders().set("Referrer-Policy", "strict-origin-when-cross-origin");
+                exchange.sendResponseHeaders(200, html.length);
+                try (OutputStream os = exchange.getResponseBody()) { os.write(html); }
+            } catch (IOException ex) {
+                sendJsonResponse(exchange, 500, "{\"error\":\"No se pudo abrir index.html\"}");
+            }
+        });
+
         // 1. Endpoint: Consultar asignaciones académicas (para Nóminas)
         server.createContext("/api/academic/assignments", new AcademicHandler(academicService));
 
@@ -62,6 +90,7 @@ public class EscolarHttpServer {
         server.start();
         System.out.println("============================================================");
         System.out.println("🚀 Servidor HTTP de Control Escolar ACTIVO en puerto " + PORT);
+        System.out.println("   - WEB  http://localhost:" + PORT + "/");
         System.out.println("   - GET  http://localhost:" + PORT + "/api/academic/assignments");
         System.out.println("   - POST http://localhost:" + PORT + "/api/notifications/send");
         System.out.println("   - GET  http://localhost:" + PORT + "/api/nominas/docente?query=...");
