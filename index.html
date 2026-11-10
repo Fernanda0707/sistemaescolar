@@ -436,6 +436,35 @@
                 </div>
             </section>
 
+
+            <!-- MODAL DE PASARELA SIMULADA: NO SOLICITA DATOS DE TARJETA -->
+            <div id="payment-demo-overlay" class="fixed inset-0 z-50 hidden bg-slate-950/80 p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Pago de prueba">
+                <div class="w-full max-w-md bg-slate-800 border border-slate-600 rounded-2xl p-6 space-y-4 shadow-2xl">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-xl">Pasarela de pago escolar</h3>
+                        <button type="button" onclick="closePaymentDemo()" aria-label="Cerrar" class="text-slate-300 text-2xl">×</button>
+                    </div>
+                    <p class="text-amber-400 font-semibold text-xs">SIMULACIÓN · NO SE COBRARÁ DINERO REAL</p>
+                    <p id="payment-demo-detail" class="text-sm text-slate-300"></p>
+                    <div class="p-4 rounded-xl bg-slate-900 border border-slate-700">
+                        <p class="text-xs text-slate-400">Total a pagar</p>
+                        <p id="payment-demo-total" class="text-3xl font-bold"></p>
+                    </div>
+                    <form onsubmit="confirmPaymentDemo(event)" class="space-y-4">
+                        <label for="payment-demo-method" class="block text-sm">Método de pago de prueba</label>
+                        <select id="payment-demo-method" required class="w-full bg-slate-900 border border-slate-600 rounded-xl p-3 text-white">
+                            <option value="TARJETA_DEMO">Tarjeta simulada (sin datos bancarios)</option>
+                            <option value="TRANSFERENCIA_DEMO">Transferencia simulada</option>
+                            <option value="EFECTIVO_DEMO">Efectivo simulado</option>
+                        </select>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="closePaymentDemo()" class="flex-1 rounded-xl border border-slate-600 px-4 py-3">Cancelar</button>
+                            <button type="submit" class="flex-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-3 font-semibold">Confirmar pago demo</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- NOTIFICACIONES -->
             <section id="tab-notifications" class="hidden space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1517,42 +1546,98 @@
                         </div>
                         <div class="flex items-center gap-2">
                     <span class="px-2.5 py-1 text-xs rounded-full ${c.estatus === 'PAGADO' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">${c.estatus}</span>
-                    ${c.estatus === 'PENDIENTE' && canPay ? `<button onclick="processPayment('${c.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-lg transition-colors">Cobrar</button>` : ''}
-                    ${canPay ? `<button onclick="timbrarFacturaProfact('${c.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg transition-colors shadow">Timbrar CFDI</button>` : ''}
+                    ${c.estatus === 'PENDIENTE' ? `<button onclick="openPaymentDemo('${c.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-lg transition-colors">Pagar (demo)</button>` : ''}
+                    ${canPay && c.estatus === 'PAGADO' ? `<button onclick="timbrarFacturaProfact('${c.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg transition-colors shadow">Timbrar CFDI</button>` : ''}
                 </div>
                     </div>
                 `;
             }).join('') || '<p class="text-xs text-slate-500">Sin cargos registrados.</p>';
 
-            document.getElementById('total-pending-balance').innerText = `$${pendingTotal.toFixed(2)} MXN`;
+            document.getElementById('total-pending-balance').innerText = `${pendingTotal.toFixed(2)} MXN`;
+            renderPaymentDemoHistory();
         }
 
-        function processPayment(chargeId) {
-            if (state.currentUser.rol !== 'FINANZAS' && state.currentUser.rol !== 'ADMINISTRACION') {
-                showToast("⛔ Solo el área de Finanzas/Caja puede autorizar cobros.");
-                return;
-            }
 
-            const charge = state.charges.find(c => c.id === chargeId);
-            if (charge) {
-                charge.estatus = "PAGADO";
-                const invId = `inv_${Math.floor(1000 + Math.random() * 9000)}`;
-                
-                state.notifications.unshift({
-                    id: `notif_${Date.now().toString().slice(-3)}`,
-                    studentId: charge.studentId,
-                    canal: "SMS",
-                    titulo: "Pago Confirmado",
-                    mensaje: `Su pago de $${charge.monto - charge.descuento} MXN fue abonado. Factura: ${invId}`,
-                    fecha: new Date().toLocaleString()
-                });
+        // Pagos simulados: nunca captura tarjetas ni llama a un procesador bancario.
+        const paymentDemoKey = 'sistemaescolar_pagos_demo_v1';
+        let paymentDemoActive = null;
+        let paymentDemoHistory = [];
+        try {
+            const savedPayments = JSON.parse(localStorage.getItem(paymentDemoKey) || '[]');
+            paymentDemoHistory = Array.isArray(savedPayments) ? savedPayments : [];
+        } catch (_) { paymentDemoHistory = []; }
+        paymentDemoHistory.forEach(p => {
+            const c = state.charges.find(c => c.id === p.chargeId && c.studentId === p.studentId);
+            if (c && c.estatus === 'PENDIENTE') c.estatus = 'PAGADO';
+        });
 
-                renderFinance();
-                renderStudents();
-                renderNotifications();
-                showToast(`✅ Pago abonado por Caja. Factura emitida: ${invId}`);
-            }
+        function renderPaymentDemoHistory() {
+            const box = document.getElementById('payment-demo-history');
+            if (!box) return;
+            const student = state.currentUser && state.currentUser.rol === 'ALUMNO' ? state.currentUser.id : null;
+            const records = student ? paymentDemoHistory.filter(p => p.studentId === student) : paymentDemoHistory;
+            box.replaceChildren();
+            if (!records.length) { box.textContent = 'Aún no hay pagos simulados.'; return; }
+            records.slice().reverse().forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'p-3 rounded-xl bg-slate-900/60 border border-slate-700/60 text-sm';
+                const amount = Number(p.amount).toLocaleString('es-MX', {style:'currency',currency:'MXN'});
+                item.textContent = p.chargeId + ' · ' + amount + ' · ' + p.method + ' · ' + p.date + ' · ' + p.reference + ' (SIMULADO)';
+                box.append(item);
+            });
         }
+
+        function openPaymentDemo(chargeId) {
+            const c = state.charges.find(c => c.id === chargeId);
+            if (!state.currentUser || !c || c.estatus !== 'PENDIENTE') {
+                showToast('No hay cargo pendiente para pagar.'); return;
+            }
+            if (state.currentUser.rol === 'ALUMNO' && c.studentId !== state.currentUser.id) {
+                showToast('No puedes pagar el cargo de otro alumno.'); return;
+            }
+            paymentDemoActive = c.id;
+            document.getElementById('payment-demo-detail').textContent = c.desc + ' (' + c.studentId + ')';
+            document.getElementById('payment-demo-total').textContent = (c.monto-c.descuento).toLocaleString('es-MX',{style:'currency',currency:'MXN'});
+            document.getElementById('payment-demo-overlay').classList.remove('hidden');
+        }
+
+        function closePaymentDemo() {
+            paymentDemoActive = null;
+            document.getElementById('payment-demo-overlay').classList.add('hidden');
+        }
+
+        function confirmPaymentDemo(event) {
+            event.preventDefault();
+            const c = state.charges.find(c => c.id === paymentDemoActive);
+            if (!c || !state.currentUser || c.estatus !== 'PENDIENTE' ||
+                (state.currentUser.rol === 'ALUMNO' && c.studentId !== state.currentUser.id)) {
+                closePaymentDemo(); showToast('Cargo no disponible.'); return;
+            }
+            const method = document.getElementById('payment-demo-method').value;
+            if (!['TARJETA_DEMO','TRANSFERENCIA_DEMO','EFECTIVO_DEMO'].includes(method)) return;
+            if (paymentDemoHistory.some(p => p.chargeId === c.id)) {
+                closePaymentDemo(); showToast('Este cargo ya tiene un pago simulado.'); return;
+            }
+            const transaction = {
+                chargeId:c.id, studentId:c.studentId, amount:c.monto-c.descuento,
+                method, reference:'DEMO-' + Date.now().toString(36).toUpperCase(),
+                date:new Date().toLocaleString('es-MX')
+            };
+            paymentDemoHistory.push(transaction);
+            try { localStorage.setItem(paymentDemoKey, JSON.stringify(paymentDemoHistory)); }
+            catch (_) { paymentDemoHistory.pop(); showToast('No se pudo guardar el pago demo.'); return; }
+            c.estatus = 'PAGADO';
+            state.notifications.unshift({
+                id:'notif_demo_'+Date.now(), studentId:c.studentId, canal:'DEMO',
+                titulo:'Pago de demostración', mensaje:'Pago simulado por $' + transaction.amount.toFixed(2) + ' MXN. Referencia: ' + transaction.reference + '. No es un cobro real ni un CFDI.',
+                fecha:transaction.date
+            });
+            closePaymentDemo();
+            renderFinance(); renderStudents(); renderNotifications();
+            showToast('✅ Pago simulado registrado. No se realizó ningún cargo bancario.');
+        }
+
+        function processPayment(chargeId) { openPaymentDemo(chargeId); }
 
         function renderNotifications() {
             const container = document.getElementById('notifications-list');
