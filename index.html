@@ -1053,7 +1053,7 @@
 
             // Definición de visibilidad de menú por rol
             const navMap = {
-                ADMINISTRACION: ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'memberships', 'weather', 'notifications'],
+                ADMINISTRACION: ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'memberships', 'weather', 'notifications', 'nominas'],
                 PROFESOR: ['dashboard', 'students', 'courses', 'grades', 'attendance', 'memberships', 'weather', 'notifications'],
                 FINANZAS: ['dashboard', 'students', 'finance', 'memberships', 'weather', 'notifications'],
                 ALUMNO: ['courses', 'enrollment', 'grades', 'attendance', 'finance', 'memberships', 'weather', 'notifications'],
@@ -1061,7 +1061,7 @@
             };
 
             const allowedTabs = navMap[role] || [];
-            const allTabs = ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'memberships', 'weather', 'notifications'];
+            const allTabs = ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'memberships', 'weather', 'notifications', 'nominas'];
 
             allTabs.forEach(tab => {
                 const navBtn = document.getElementById(`nav-${tab}`);
@@ -1157,6 +1157,17 @@
         }
 
         function switchTab(tabId) {
+            const role = state.currentUser?.rol;
+            const allowedByRole = {
+                ADMINISTRACION:['dashboard','students','courses','enrollment','grades','attendance','finance','memberships','weather','notifications','nominas'],
+                PROFESOR:['dashboard','students','courses','grades','attendance','memberships','weather','notifications'],
+                FINANZAS:['dashboard','students','finance','memberships','weather','notifications'],
+                ALUMNO:['courses','enrollment','grades','attendance','finance','memberships','weather','notifications'],
+                DESARROLLADOR:['memberships']
+            };
+            if (!role || !allowedByRole[role]?.includes(tabId)) {
+                showToast('Tu rol no autoriza esta sección.'); return;
+            }
             if (state.currentUser && tabId !== 'memberships' &&
                 (!window.AccessDemo || !AccessDemo.canOpen(tabId))) {
                 showToast('La licencia empresarial no autoriza este módulo.');
