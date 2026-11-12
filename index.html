@@ -7,6 +7,8 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex items-center justify-center">
 
@@ -141,6 +143,9 @@
                     </button>
                     <button onclick="switchTab('finance')" id="nav-finance" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
                         <i data-lucide="wallet" class="w-4 h-4"></i> Estado de Cuenta
+                    </button>
+                    <button onclick="switchTab('weather')" id="nav-weather" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
+                        <i data-lucide="cloud-sun" class="w-4 h-4"></i> Mapa del clima
                     </button>
                     <button onclick="switchTab('notifications')" id="nav-notifications" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
                         <i data-lucide="bell" class="w-4 h-4"></i> Notificaciones
@@ -470,6 +475,38 @@
                     </form>
                 </div>
             </div>
+
+            <!-- CLIMA LOCAL: OPENWEATHERMAP -->
+            <section id="tab-weather" class="hidden space-y-6">
+                <div class="bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4">
+                    <div class="flex flex-wrap justify-between items-center gap-3">
+                        <div>
+                            <h3 class="font-bold text-lg">Mapa meteorológico de Durango, Durango</h3>
+                            <p class="text-xs text-slate-400">Información actual y capas de OpenWeatherMap · ubicación aproximada del centro de Durango</p>
+                        </div>
+                        <button onclick="refreshWeather()" class="bg-indigo-600 hover:bg-indigo-500 rounded-lg px-4 py-2 text-sm font-semibold">Actualizar clima</button>
+                    </div>
+                    <p id="weather-status" role="status" class="text-sm text-slate-300">Abre esta pestaña para consultar el clima.</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="bg-slate-900/60 rounded-xl p-4"><p class="text-slate-400 text-xs">Temperatura</p><p id="weather-temperature" class="text-2xl font-bold mt-1">—</p></div>
+                        <div class="bg-slate-900/60 rounded-xl p-4"><p class="text-slate-400 text-xs">Sensación térmica</p><p id="weather-feels" class="text-2xl font-bold mt-1">—</p></div>
+                        <div class="bg-slate-900/60 rounded-xl p-4"><p class="text-slate-400 text-xs">Humedad</p><p id="weather-humidity" class="text-2xl font-bold mt-1">—</p></div>
+                        <div class="bg-slate-900/60 rounded-xl p-4"><p class="text-slate-400 text-xs">Viento</p><p id="weather-wind" class="text-2xl font-bold mt-1">—</p></div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <label for="weather-layer" class="text-sm text-slate-300">Visualizar capa:</label>
+                        <select id="weather-layer" onchange="setWeatherLayer(this.value)" class="bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
+                            <option value="nubes">Nubes</option>
+                            <option value="lluvia">Precipitación</option>
+                            <option value="temperatura">Temperatura</option>
+                            <option value="ninguna">Solo mapa base</option>
+                        </select>
+                        <span id="weather-description" class="text-sm text-slate-300"></span>
+                    </div>
+                    <div id="school-weather-map" class="rounded-xl border border-slate-600 overflow-hidden bg-slate-900" style="height:430px;z-index:0" aria-label="Mapa meteorológico interactivo centrado en Durango"></div>
+                    <p class="text-xs text-slate-400">Mapa base © OpenStreetMap contributors · Capa meteorológica y datos © OpenWeatherMap. Requiere clave de API activa y conexión a Internet.</p>
+                </div>
+            </section>
 
             <!-- NOTIFICACIONES -->
             <section id="tab-notifications" class="hidden space-y-6">
@@ -958,14 +995,14 @@
 
             // Definición de visibilidad de menú por rol
             const navMap = {
-                ADMINISTRACION: ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'notifications'],
-                PROFESOR: ['dashboard', 'students', 'courses', 'grades', 'attendance', 'notifications'],
-                FINANZAS: ['dashboard', 'students', 'finance', 'notifications'],
-                ALUMNO: ['courses', 'enrollment', 'grades', 'attendance', 'finance', 'notifications']
+                ADMINISTRACION: ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'weather', 'notifications'],
+                PROFESOR: ['dashboard', 'students', 'courses', 'grades', 'attendance', 'weather', 'notifications'],
+                FINANZAS: ['dashboard', 'students', 'finance', 'weather', 'notifications'],
+                ALUMNO: ['courses', 'enrollment', 'grades', 'attendance', 'finance', 'weather', 'notifications']
             };
 
             const allowedTabs = navMap[role] || [];
-            const allTabs = ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'notifications'];
+            const allTabs = ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'weather', 'notifications'];
 
             allTabs.forEach(tab => {
                 const navBtn = document.getElementById(`nav-${tab}`);
@@ -1059,7 +1096,7 @@
         }
 
         function switchTab(tabId) {
-            const tabs = ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'notifications', 'nominas'];
+            const tabs = ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'weather', 'notifications', 'nominas'];
             tabs.forEach(t => {
                 const section = document.getElementById(`tab-${t}`);
                 if (section) section.classList.add('hidden');
@@ -1082,6 +1119,7 @@
                 grades: ['Kárdex Académico y Evaluación', 'Boleta oficial de calificaciones y registro de examenes.'],
                 attendance: ['Control de Asistencia', 'Seguimiento de asistencias, inasistencias y retardos.'],
                 finance: ['Estado de Cuenta y Cobros', 'Módulo financiero de colegiaturas y facturación.'],
+                weather: ['Mapa del Clima', 'Pronóstico visual y condiciones actuales de Durango con OpenWeatherMap.'],
                 notifications: ['Centro de Notificaciones', 'Comunicados institucionales y avisos directos.'],
                 nominas: ['Servicios de Nóminas (API REST)', 'Consulta de expedientes y contratos laborales desde el sistema de Nóminas (:8000).']
             };
@@ -1090,6 +1128,73 @@
                 document.getElementById('page-subtitle').innerText = titles[tabId][1];
             }
             lucide.createIcons();
+            if (tabId === 'weather') { initSchoolWeatherMap(); refreshWeather(); }
+        }
+
+
+        // Mapa interactivo: OpenStreetMap como base y capas OpenWeatherMap por backend.
+        const weatherCenter = [24.0277, -104.6532];
+        let schoolWeatherMap = null;
+        let schoolWeatherOverlay = null;
+        let weatherRefreshAt = 0;
+
+        function initSchoolWeatherMap() {
+            if (!window.L) {
+                document.getElementById('weather-status').textContent = 'No se pudo cargar Leaflet. Revisa la conexión a Internet.';
+                return;
+            }
+            if (!schoolWeatherMap) {
+                schoolWeatherMap = L.map('school-weather-map', {scrollWheelZoom:false}).setView(weatherCenter, 9);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution:'© OpenStreetMap contributors', maxZoom:18
+                }).addTo(schoolWeatherMap);
+                L.marker(weatherCenter).addTo(schoolWeatherMap)
+                    .bindPopup('Durango, Durango, México · ubicación aproximada');
+                setWeatherLayer(document.getElementById('weather-layer').value);
+            }
+            setTimeout(() => schoolWeatherMap.invalidateSize(), 100);
+        }
+
+        function setWeatherLayer(layer) {
+            if (!schoolWeatherMap) return;
+            if (schoolWeatherOverlay) {
+                schoolWeatherMap.removeLayer(schoolWeatherOverlay);
+                schoolWeatherOverlay = null;
+            }
+            if (layer === 'ninguna') return;
+            if (!['nubes','lluvia','temperatura'].includes(layer)) return;
+            schoolWeatherOverlay = L.tileLayer('http://localhost:8081/api/weather/tiles/' +
+                layer + '/{z}/{x}/{y}.png', {
+                attribution:'Datos meteorológicos © OpenWeatherMap',
+                opacity:0.7, maxNativeZoom:12, maxZoom:18
+            }).addTo(schoolWeatherMap);
+            schoolWeatherOverlay.on('tileerror', function() {
+                document.getElementById('weather-status').textContent =
+                    'No se pudo cargar la capa meteorológica. Revisa la API key y el servidor Java.';
+            });
+        }
+
+        async function refreshWeather() {
+            const status = document.getElementById('weather-status');
+            if (!status) return;
+            if (Date.now() - weatherRefreshAt < 30000) return;
+            weatherRefreshAt = Date.now();
+            status.textContent = 'Consultando datos actuales de OpenWeatherMap...';
+            try {
+                const res = await fetch('http://localhost:8081/api/weather/current');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error HTTP ' + res.status);
+                document.getElementById('weather-temperature').textContent = Number(data.main.temp).toFixed(1) + ' °C';
+                document.getElementById('weather-feels').textContent = Number(data.main.feels_like).toFixed(1) + ' °C';
+                document.getElementById('weather-humidity').textContent = data.main.humidity + ' %';
+                document.getElementById('weather-wind').textContent = Number(data.wind.speed).toFixed(1) + ' m/s';
+                document.getElementById('weather-description').textContent = data.weather?.[0]?.description || '';
+                status.textContent = 'Actualizado: ' + new Date().toLocaleString('es-MX') + ' · fuente: OpenWeatherMap';
+            } catch (err) {
+                weatherRefreshAt = 0;
+                status.textContent = 'No se pudo consultar el clima: ' + err.message +
+                    '. Configura OPENWEATHER_API_KEY e inicia el backend Java en el puerto 8081.';
+            }
         }
 
         // RENDERIZAR ALUMNOS
