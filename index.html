@@ -7,7 +7,7 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="AccessDemo.js"></script>
+    <script src="AccessDemo.js" onerror="window.accessDemoLoadFailed = true"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -1001,7 +1001,7 @@
                 document.getElementById('role-badge').innerText = user.rol;
                 document.getElementById('token-display').innerText = state.token;
 
-                AccessDemo.login(user);
+                if (window.AccessDemo) AccessDemo.login(user);
                 // Aplicar visibilidad de botones y menú según el rol
                 applyRolePermissions();
 
@@ -1020,7 +1020,7 @@
         }
 
         function handleLogout() {
-            AccessDemo.login(null);
+            if (window.AccessDemo) AccessDemo.login(null);
             state.currentUser = null;
             state.token = null;
 
@@ -1176,7 +1176,15 @@
             }
             lucide.createIcons();
             if (tabId === 'weather') { initSchoolWeatherMap(); refreshWeather(); }
-            if (tabId === 'memberships') AccessDemo.render();
+            if (tabId === 'memberships') {
+                if (!window.AccessDemo) {
+                    const area = document.getElementById('membership-plans');
+                    area.textContent = 'No se cargó AccessDemo.js. Abre http://localhost:8081/AccessDemo.js y verifica que el archivo exista en la carpeta del proyecto; reinicia el servidor Java y actualiza con Ctrl + F5.';
+                    area.className = 'rounded-xl bg-rose-950/40 border border-rose-600/50 p-4 text-rose-200 text-sm';
+                } else {
+                    AccessDemo.login(state.currentUser);
+                }
+            }
         }
 
 
@@ -1206,7 +1214,7 @@
         function setWeatherLayer(layer) {
             if (!schoolWeatherMap) return;
             if (layer !== 'ninguna' && !['nubes','lluvia','temperatura'].includes(layer)) return;
-            if (layer !== 'ninguna' && !AccessDemo.check('weather',4)) {
+            if (layer !== 'ninguna' && (!window.AccessDemo || !AccessDemo.check('weather',4))) {
                 document.getElementById('weather-layer').value = 'ninguna';
                 return;
             }
@@ -1254,7 +1262,7 @@
             if (!state.currentUser || !['ALUMNO','PROFESOR','ADMINISTRACION'].includes(state.currentUser.rol)) {
                 showToast('No tienes autorización para exportar el Kárdex.'); return;
             }
-            if (!AccessDemo.check('grades',8)) return;
+            if (!window.AccessDemo || !AccessDemo.check('grades',8)) return;
             const selectedStudent = state.currentUser.rol === 'ALUMNO' ? state.currentUser.id : 'std_456';
             const records = state.grades.filter(g => g.studentId === selectedStudent);
             const values = [['Alumno ID','Curso ID','Concepto','Calificacion']].concat(
