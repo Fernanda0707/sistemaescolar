@@ -80,6 +80,10 @@
                         <p class="font-bold text-sky-400">4. Alumno</p>
                         <p class="text-slate-400 text-[10px]">alumno@escuela.edu</p>
                     </button>
+                    <button type="button" onclick="fillCredentials('proveedor@sistema.demo', 'proveedor2026')" class="col-span-2 p-2.5 bg-indigo-900/30 hover:bg-indigo-900/60 border border-indigo-500/40 rounded-xl text-left transition">
+                        <p class="font-bold text-indigo-300">5. Desarrollador / Proveedor del software (DEMO)</p>
+                        <p class="text-slate-400 text-[10px]">proveedor@sistema.demo · Asigna licencias a la empresa</p>
+                    </button>
                 </div>
             </div>
 
@@ -146,7 +150,7 @@
                         <i data-lucide="wallet" class="w-4 h-4"></i> Estado de Cuenta
                     </button>
                     <button onclick="switchTab('memberships')" id="nav-memberships" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
-                        <i data-lucide="gem" class="w-4 h-4"></i> Membresías y Créditos
+                        <i data-lucide="gem" class="w-4 h-4"></i> Licencia de la empresa
                     </button>
                     <button onclick="switchTab('weather')" id="nav-weather" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
                         <i data-lucide="cloud-sun" class="w-4 h-4"></i> Mapa del clima
@@ -369,8 +373,8 @@
                         </div>
                         <div id="report-card-container" class="space-y-4"></div>
                         <div class="p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/10 space-y-2">
-                            <p class="font-bold text-sm text-indigo-200">Función premium opcional: Exportar resumen del Kárdex</p>
-                            <p class="text-xs text-slate-300">8 créditos por exportación o acceso ilimitado durante tu paquete de tiempo. Consultar calificaciones sigue siendo gratuito.</p>
+                            <p class="font-bold text-sm text-indigo-200">Función empresarial Silver / Golden: Exportar Kárdex</p>
+                            <p class="text-xs text-slate-300">8 créditos compartidos por exportación o pase de tiempo. Consultar las notas es parte de la licencia básica.</p>
                             <p id="grade-premium-status" class="text-xs text-emerald-300"></p>
                             <button type="button" onclick="exportGradesCsvDemo()" class="bg-indigo-600 hover:bg-indigo-500 rounded-lg px-4 py-2 text-sm font-bold">Exportar CSV (8 créditos)</button>
                         </div>
@@ -490,30 +494,30 @@
             <section id="tab-memberships" class="hidden space-y-6">
                 <div id="membership-content" class="space-y-5">
                     <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
-                        DEMOSTRACIÓN ACADÉMICA: las membresías y compras son ficticias. No se procesa dinero, no se registran datos bancarios y el acceso se controla solo en el navegador.
+                        LICENCIAMIENTO B2B (DEMO): la empresa contrata la licencia del sistema. El desarrollador asigna el paquete; los empleados solamente utilizan las funciones contratadas y permitidas por su rol. Sin cobros reales ni seguridad de servidor.
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="p-5 rounded-xl bg-slate-800 border border-slate-700">
-                            <p class="text-xs text-slate-400">Saldo disponible</p>
+                            <p class="text-xs text-slate-400">Créditos compartidos de la empresa</p>
                             <p id="membership-balance" class="text-3xl font-extrabold text-emerald-400 mt-1">0 créditos</p>
                         </div>
                         <div class="p-5 rounded-xl bg-slate-800 border border-slate-700">
-                            <p class="text-xs text-slate-400">Membresía actual</p>
+                            <p class="text-xs text-slate-400">Licencia de la empresa</p>
                             <p id="membership-current" class="text-3xl font-extrabold text-indigo-300 mt-1">Sin membresía</p>
                         </div>
                     </div>
                     <div class="p-6 rounded-xl bg-slate-800 border border-slate-700 space-y-4">
-                        <h3 class="font-bold text-lg">Elige una de las 3 membresías</h3>
-                        <p class="text-sm text-slate-400">Los precios de demostración se convierten en créditos internos, no en pagos reales.</p>
+                        <h3 class="font-bold text-lg">Planes empresariales: Bronce, Silver y Golden</h3>
+                        <p class="text-sm text-slate-400">Golden incluye todas las funcionalidades; Silver no incluye Nóminas ni Timbrado CFDI; Bronce solo lo esencial. Solo el proveedor puede asignar una licencia.<p id="company-license-summary" class="text-xs text-indigo-300 mt-2"></p></p>
                         <div id="membership-plans" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
                     </div>
                     <div class="p-6 rounded-xl bg-slate-800 border border-slate-700 space-y-4">
                         <h3 class="font-bold text-lg">Paquetes de acceso por tiempo</h3>
-                        <p class="text-sm text-slate-400">Cada módulo permite activar 15 minutos, 2 horas o 7 días de uso ilimitado de su función adicional, a cambio de créditos.</p>
+                        <p class="text-sm text-slate-400">Los créditos de la empresa permiten contratar pases por 15 minutos, 2 horas o 7 días para Kárdex y Clima, si la licencia incluye esas funciones.</p>
                         <div id="membership-packages" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                     </div>
                     <div class="p-6 rounded-xl bg-slate-800 border border-slate-700 space-y-3">
-                        <h3 class="font-bold text-lg">Historial de créditos y autorizaciones</h3>
+                        <h3 class="font-bold text-lg">Historial de licencias y movimientos empresariales</h3>
                         <div id="membership-history" class="max-h-64 overflow-y-auto"></div>
                     </div>
                 </div>
@@ -546,7 +550,7 @@
                         </select>
                         <span id="weather-description" class="text-sm text-slate-300"></span>
                     </div>
-                    <p class="text-xs text-slate-300">Las capas son extras premium: 4 créditos por activación, o acceso ilimitado con un paquete de tiempo. El mapa base y el clima actual siguen siendo gratuitos. <span id="weather-premium-status" class="text-emerald-300"></span></p>
+                    <p class="text-xs text-slate-300">Capas incluidas en Silver y Golden: 4 créditos de empresa por activación o pase temporal. Bronce no incluye Clima. <span id="weather-premium-status" class="text-emerald-300"></span></p>
                     <div id="school-weather-map" class="rounded-xl border border-slate-600 overflow-hidden bg-slate-900" style="height:430px;z-index:0" aria-label="Mapa meteorológico interactivo centrado en Durango"></div>
                     <p class="text-xs text-slate-400">Mapa base © OpenStreetMap contributors · Capa meteorológica y datos © OpenWeatherMap. Requiere clave de API activa y conexión a Internet.</p>
                 </div>
@@ -908,6 +912,14 @@
                 rol: "FINANZAS",
                 id: "usr_fin_55",
                 permisos: ["finanzas:cobrar", "facturas:emitir", "estado_cuenta:leer"]
+            },
+            {
+                email: "proveedor@sistema.demo",
+                password: "proveedor2026",
+                nombre: "Proveedor del Software (DEMO)",
+                rol: "DESARROLLADOR",
+                id: "developer_demo",
+                permisos: ["licencias:asignar"]
             },
             {
                 email: "alumno@escuela.edu",
