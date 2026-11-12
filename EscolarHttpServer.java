@@ -44,7 +44,7 @@ public class EscolarHttpServer {
         // Solo se expone index.html; nunca exponer el directorio entero ni claves.
         server.createContext("/", exchange -> {
             String path = exchange.getRequestURI().getPath();
-            if (!"/".equals(path) && !"/index.html".equals(path)) {
+            if (!"/".equals(path) && !"/index.html".equals(path) && !"/AccessDemo.js".equals(path)) {
                 sendJsonResponse(exchange, 404, "{\"error\":\"Pagina no encontrada\"}");
                 return;
             }
@@ -53,13 +53,14 @@ public class EscolarHttpServer {
                 return;
             }
             try {
-                java.nio.file.Path file = java.nio.file.Path.of("index.html");
+                boolean javascript = "/AccessDemo.js".equals(path);
+                java.nio.file.Path file = java.nio.file.Path.of(javascript ? "AccessDemo.js" : "index.html");
                 if (!java.nio.file.Files.isRegularFile(file)) {
                     sendJsonResponse(exchange, 404, "{\"error\":\"No se encontro index.html en la carpeta actual\"}");
                     return;
                 }
                 byte[] html = java.nio.file.Files.readAllBytes(file);
-                exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
+                exchange.getResponseHeaders().set("Content-Type", javascript ? "application/javascript; charset=utf-8" : "text/html; charset=utf-8");
                 exchange.getResponseHeaders().set("Referrer-Policy", "strict-origin-when-cross-origin");
                 exchange.sendResponseHeaders(200, html.length);
                 try (OutputStream os = exchange.getResponseBody()) { os.write(html); }
