@@ -1056,7 +1056,8 @@
                 ADMINISTRACION: ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'memberships', 'weather', 'notifications'],
                 PROFESOR: ['dashboard', 'students', 'courses', 'grades', 'attendance', 'memberships', 'weather', 'notifications'],
                 FINANZAS: ['dashboard', 'students', 'finance', 'memberships', 'weather', 'notifications'],
-                ALUMNO: ['courses', 'enrollment', 'grades', 'attendance', 'finance', 'memberships', 'weather', 'notifications']
+                ALUMNO: ['courses', 'enrollment', 'grades', 'attendance', 'finance', 'memberships', 'weather', 'notifications'],
+                DESARROLLADOR: ['memberships']
             };
 
             const allowedTabs = navMap[role] || [];
@@ -1065,7 +1066,7 @@
             allTabs.forEach(tab => {
                 const navBtn = document.getElementById(`nav-${tab}`);
                 if (navBtn) {
-                    if (allowedTabs.includes(tab)) {
+                    if (allowedTabs.includes(tab) && (!window.AccessDemo || AccessDemo.canOpen(tab))) {
                         navBtn.classList.remove('hidden');
                     } else {
                         navBtn.classList.add('hidden');
@@ -1073,6 +1074,9 @@
                 }
             });
 
+            const nominasBtn = document.getElementById('nav-nominas');
+            if (nominasBtn) nominasBtn.classList.toggle('hidden',
+                !(allowedTabs.includes('nominas') && window.AccessDemo && AccessDemo.canOpen('nominas')));
             // Botones de Acción Restringidos
             toggleElement('btn-add-student', role === 'ADMINISTRACION');
             toggleElement('btn-add-course', role === 'ADMINISTRACION');
@@ -1119,9 +1123,8 @@
             }
 
             // Cambiar a la primera pestaña permitida
-            if (allowedTabs.length > 0) {
-                switchTab(allowedTabs[0]);
-            }
+            const firstTab = allowedTabs.find(tab => tab === 'memberships' || (window.AccessDemo && AccessDemo.canOpen(tab)));
+            switchTab(firstTab || 'memberships');
         }
 
         function toggleElement(id, show) {
@@ -1154,6 +1157,11 @@
         }
 
         function switchTab(tabId) {
+            if (state.currentUser && tabId !== 'memberships' &&
+                (!window.AccessDemo || !AccessDemo.canOpen(tabId))) {
+                showToast('La licencia empresarial no autoriza este módulo.');
+                return;
+            }
             const tabs = ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'memberships', 'weather', 'notifications', 'nominas'];
             tabs.forEach(t => {
                 const section = document.getElementById(`tab-${t}`);
@@ -1177,7 +1185,7 @@
                 grades: ['Kárdex Académico y Evaluación', 'Boleta oficial de calificaciones y registro de examenes.'],
                 attendance: ['Control de Asistencia', 'Seguimiento de asistencias, inasistencias y retardos.'],
                 finance: ['Estado de Cuenta y Cobros', 'Módulo financiero de colegiaturas y facturación.'],
-                memberships: ['Membresías y Créditos', 'Créditos, autorización y paquetes de acceso por tiempo (modo demostración).'],
+                memberships: ['Licencia de la empresa', 'Planes Bronce, Silver y Golden, asignados por el desarrollador.'],
                 weather: ['Mapa del Clima', 'Pronóstico visual y condiciones actuales de Durango con OpenWeatherMap.'],
                 notifications: ['Centro de Notificaciones', 'Comunicados institucionales y avisos directos.'],
                 nominas: ['Servicios de Nóminas (API REST)', 'Consulta de expedientes y contratos laborales desde el sistema de Nóminas (:8000).']
@@ -1753,7 +1761,7 @@
                         <div class="flex items-center gap-2">
                     <span class="px-2.5 py-1 text-xs rounded-full ${c.estatus === 'PAGADO' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">${c.estatus}</span>
                     ${c.estatus === 'PENDIENTE' ? `<button onclick="openPaymentDemo('${c.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-lg transition-colors">Pagar (demo)</button>` : ''}
-                    ${canPay && c.estatus === 'PAGADO' ? `<button onclick="timbrarFacturaProfact('${c.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg transition-colors shadow">Timbrar CFDI</button>` : ''}
+                    ${canPay && c.estatus === 'PAGADO' && window.AccessDemo && AccessDemo.enabled('timbrar') ? `<button onclick="timbrarFacturaProfact('${c.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg transition-colors shadow">Timbrar CFDI</button>` : ''}
                 </div>
                     </div>
                 `;
@@ -2002,6 +2010,7 @@
  * Envía el CFDI del cargo a timbrar en el backend (Profact v2.0)
  */
 async function timbrarFacturaProfact(chargeId) {
+    if (!window.AccessDemo || !AccessDemo.authorize('timbrar')) return;
     const charge = state.charges.find(c => c.id === chargeId);
     if (!state.currentUser || !['FINANZAS','ADMINISTRACION'].includes(state.currentUser.rol)) {
         showToast('Solo Finanzas y Administración pueden solicitar timbrado.'); return;
