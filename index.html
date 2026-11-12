@@ -7,6 +7,7 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="AccessDemo.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -143,6 +144,9 @@
                     </button>
                     <button onclick="switchTab('finance')" id="nav-finance" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
                         <i data-lucide="wallet" class="w-4 h-4"></i> Estado de Cuenta
+                    </button>
+                    <button onclick="switchTab('memberships')" id="nav-memberships" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
+                        <i data-lucide="gem" class="w-4 h-4"></i> Membresías y Créditos
                     </button>
                     <button onclick="switchTab('weather')" id="nav-weather" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-700/50 hover:text-slate-200">
                         <i data-lucide="cloud-sun" class="w-4 h-4"></i> Mapa del clima
@@ -364,6 +368,12 @@
                             <span class="text-xs font-mono text-emerald-400">Promedio Acumulado: <strong id="gpa-display" class="text-base">9.17</strong></span>
                         </div>
                         <div id="report-card-container" class="space-y-4"></div>
+                        <div class="p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/10 space-y-2">
+                            <p class="font-bold text-sm text-indigo-200">Función premium opcional: Exportar resumen del Kárdex</p>
+                            <p class="text-xs text-slate-300">8 créditos por exportación o acceso ilimitado durante tu paquete de tiempo. Consultar calificaciones sigue siendo gratuito.</p>
+                            <p id="grade-premium-status" class="text-xs text-emerald-300"></p>
+                            <button type="button" onclick="exportGradesCsvDemo()" class="bg-indigo-600 hover:bg-indigo-500 rounded-lg px-4 py-2 text-sm font-bold">Exportar CSV (8 créditos)</button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -476,6 +486,39 @@
                 </div>
             </div>
 
+            <!-- MEMBRESIAS Y CREDITOS: demo educativo sin cobros reales -->
+            <section id="tab-memberships" class="hidden space-y-6">
+                <div id="membership-content" class="space-y-5">
+                    <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
+                        DEMOSTRACIÓN ACADÉMICA: las membresías y compras son ficticias. No se procesa dinero, no se registran datos bancarios y el acceso se controla solo en el navegador.
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="p-5 rounded-xl bg-slate-800 border border-slate-700">
+                            <p class="text-xs text-slate-400">Saldo disponible</p>
+                            <p id="membership-balance" class="text-3xl font-extrabold text-emerald-400 mt-1">0 créditos</p>
+                        </div>
+                        <div class="p-5 rounded-xl bg-slate-800 border border-slate-700">
+                            <p class="text-xs text-slate-400">Membresía actual</p>
+                            <p id="membership-current" class="text-3xl font-extrabold text-indigo-300 mt-1">Sin membresía</p>
+                        </div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800 border border-slate-700 space-y-4">
+                        <h3 class="font-bold text-lg">Elige una de las 3 membresías</h3>
+                        <p class="text-sm text-slate-400">Los precios de demostración se convierten en créditos internos, no en pagos reales.</p>
+                        <div id="membership-plans" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800 border border-slate-700 space-y-4">
+                        <h3 class="font-bold text-lg">Paquetes de acceso por tiempo</h3>
+                        <p class="text-sm text-slate-400">Cada módulo permite activar 15 minutos, 2 horas o 7 días de uso ilimitado de su función adicional, a cambio de créditos.</p>
+                        <div id="membership-packages" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800 border border-slate-700 space-y-3">
+                        <h3 class="font-bold text-lg">Historial de créditos y autorizaciones</h3>
+                        <div id="membership-history" class="max-h-64 overflow-y-auto"></div>
+                    </div>
+                </div>
+            </section>
+
             <!-- CLIMA LOCAL: OPENWEATHERMAP -->
             <section id="tab-weather" class="hidden space-y-6">
                 <div class="bg-slate-800 border border-slate-700 p-6 rounded-xl space-y-4">
@@ -496,13 +539,14 @@
                     <div class="flex flex-wrap items-center gap-3">
                         <label for="weather-layer" class="text-sm text-slate-300">Visualizar capa:</label>
                         <select id="weather-layer" onchange="setWeatherLayer(this.value)" class="bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
-                            <option value="nubes">Nubes</option>
-                            <option value="lluvia">Precipitación</option>
-                            <option value="temperatura">Temperatura</option>
-                            <option value="ninguna">Solo mapa base</option>
+                            <option value="ninguna">Solo mapa base (gratis)</option>
+                            <option value="nubes">Nubes (4 créditos)</option>
+                            <option value="lluvia">Precipitación (4 créditos)</option>
+                            <option value="temperatura">Temperatura (4 créditos)</option>
                         </select>
                         <span id="weather-description" class="text-sm text-slate-300"></span>
                     </div>
+                    <p class="text-xs text-slate-300">Las capas son extras premium: 4 créditos por activación, o acceso ilimitado con un paquete de tiempo. El mapa base y el clima actual siguen siendo gratuitos. <span id="weather-premium-status" class="text-emerald-300"></span></p>
                     <div id="school-weather-map" class="rounded-xl border border-slate-600 overflow-hidden bg-slate-900" style="height:430px;z-index:0" aria-label="Mapa meteorológico interactivo centrado en Durango"></div>
                     <p class="text-xs text-slate-400">Mapa base © OpenStreetMap contributors · Capa meteorológica y datos © OpenWeatherMap. Requiere clave de API activa y conexión a Internet.</p>
                 </div>
@@ -957,6 +1001,7 @@
                 document.getElementById('role-badge').innerText = user.rol;
                 document.getElementById('token-display').innerText = state.token;
 
+                AccessDemo.login(user);
                 // Aplicar visibilidad de botones y menú según el rol
                 applyRolePermissions();
 
@@ -975,6 +1020,7 @@
         }
 
         function handleLogout() {
+            AccessDemo.login(null);
             state.currentUser = null;
             state.token = null;
 
@@ -995,14 +1041,14 @@
 
             // Definición de visibilidad de menú por rol
             const navMap = {
-                ADMINISTRACION: ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'weather', 'notifications'],
-                PROFESOR: ['dashboard', 'students', 'courses', 'grades', 'attendance', 'weather', 'notifications'],
-                FINANZAS: ['dashboard', 'students', 'finance', 'weather', 'notifications'],
-                ALUMNO: ['courses', 'enrollment', 'grades', 'attendance', 'finance', 'weather', 'notifications']
+                ADMINISTRACION: ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'memberships', 'weather', 'notifications'],
+                PROFESOR: ['dashboard', 'students', 'courses', 'grades', 'attendance', 'memberships', 'weather', 'notifications'],
+                FINANZAS: ['dashboard', 'students', 'finance', 'memberships', 'weather', 'notifications'],
+                ALUMNO: ['courses', 'enrollment', 'grades', 'attendance', 'finance', 'memberships', 'weather', 'notifications']
             };
 
             const allowedTabs = navMap[role] || [];
-            const allTabs = ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'weather', 'notifications'];
+            const allTabs = ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'memberships', 'weather', 'notifications'];
 
             allTabs.forEach(tab => {
                 const navBtn = document.getElementById(`nav-${tab}`);
@@ -1096,7 +1142,7 @@
         }
 
         function switchTab(tabId) {
-            const tabs = ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'weather', 'notifications', 'nominas'];
+            const tabs = ['dashboard', 'students', 'courses', 'enrollment', 'grades', 'attendance', 'finance', 'memberships', 'weather', 'notifications', 'nominas'];
             tabs.forEach(t => {
                 const section = document.getElementById(`tab-${t}`);
                 if (section) section.classList.add('hidden');
@@ -1119,6 +1165,7 @@
                 grades: ['Kárdex Académico y Evaluación', 'Boleta oficial de calificaciones y registro de examenes.'],
                 attendance: ['Control de Asistencia', 'Seguimiento de asistencias, inasistencias y retardos.'],
                 finance: ['Estado de Cuenta y Cobros', 'Módulo financiero de colegiaturas y facturación.'],
+                memberships: ['Membresías y Créditos', 'Créditos, autorización y paquetes de acceso por tiempo (modo demostración).'],
                 weather: ['Mapa del Clima', 'Pronóstico visual y condiciones actuales de Durango con OpenWeatherMap.'],
                 notifications: ['Centro de Notificaciones', 'Comunicados institucionales y avisos directos.'],
                 nominas: ['Servicios de Nóminas (API REST)', 'Consulta de expedientes y contratos laborales desde el sistema de Nóminas (:8000).']
@@ -1129,6 +1176,7 @@
             }
             lucide.createIcons();
             if (tabId === 'weather') { initSchoolWeatherMap(); refreshWeather(); }
+            if (tabId === 'memberships') AccessDemo.render();
         }
 
 
@@ -1157,6 +1205,11 @@
 
         function setWeatherLayer(layer) {
             if (!schoolWeatherMap) return;
+            if (layer !== 'ninguna' && !['nubes','lluvia','temperatura'].includes(layer)) return;
+            if (layer !== 'ninguna' && !AccessDemo.check('weather',4)) {
+                document.getElementById('weather-layer').value = 'ninguna';
+                return;
+            }
             if (schoolWeatherOverlay) {
                 schoolWeatherMap.removeLayer(schoolWeatherOverlay);
                 schoolWeatherOverlay = null;
@@ -1195,6 +1248,28 @@
                 status.textContent = 'No se pudo consultar el clima: ' + err.message +
                     '. Configura OPENWEATHER_API_KEY e inicia el backend Java en el puerto 8081.';
             }
+        }
+
+        function exportGradesCsvDemo() {
+            if (!state.currentUser || !['ALUMNO','PROFESOR','ADMINISTRACION'].includes(state.currentUser.rol)) {
+                showToast('No tienes autorización para exportar el Kárdex.'); return;
+            }
+            if (!AccessDemo.check('grades',8)) return;
+            const selectedStudent = state.currentUser.rol === 'ALUMNO' ? state.currentUser.id : 'std_456';
+            const records = state.grades.filter(g => g.studentId === selectedStudent);
+            const values = [['Alumno ID','Curso ID','Concepto','Calificacion']].concat(
+                records.map(g=>[g.studentId,g.courseId,g.concepto,g.nota])
+            );
+            const csv = '\uFEFF' + values.map(row=>row.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\r\n');
+            const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'kardex_demo_' + selectedStudent + '.csv';
+            document.body.appendChild(a);
+            a.click(); a.remove();
+            setTimeout(()=>URL.revokeObjectURL(url),1000);
+            showToast('Exportación CSV autorizada (modo DEMO).');
         }
 
         // RENDERIZAR ALUMNOS
