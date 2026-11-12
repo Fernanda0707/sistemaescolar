@@ -80,6 +80,8 @@
     }
     function buyPass(module, id) {
         if (!eligible() || !Object.hasOwn(modules,module)) return notify('Acceso no autorizado.');
+        if (module === 'grades' && !['ALUMNO','PROFESOR','ADMINISTRACION'].includes(user.rol))
+            return notify('Tu rol no tiene permiso para exportar Kárdex.');
         const packageData = durations.find(d=>d.id===id);
         if (!packageData) return;
         if (store.credits < packageData.credits) return notify('Créditos insuficientes; activa una membresía.');
@@ -119,6 +121,7 @@
         const packageList = document.getElementById('membership-packages');
         packageList.replaceChildren();
         for (const [key,label] of Object.entries(modules)) {
+            if (key === 'grades' && !['ALUMNO','PROFESOR','ADMINISTRACION'].includes(user.rol)) continue;
             const box = document.createElement('div');
             box.className = 'bg-slate-900/70 border border-slate-600 rounded-xl p-4 space-y-3';
             const h = document.createElement('h4');
