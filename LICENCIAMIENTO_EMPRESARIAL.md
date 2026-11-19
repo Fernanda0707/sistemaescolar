@@ -1,77 +1,56 @@
 # Licenciamiento empresarial B2B — Sistema Escolar
 
-## Corrección del modelo de negocio
+## Modelo comercial
 
-La escuela/empresa es **cliente del desarrollador del software**. La empresa contrata **una licencia única**, no cada alumno, profesor o empleado por separado. Los usuarios de la escuela siguen teniendo roles RBAC. Para abrir una función se requieren **las dos autorizaciones**:
+El **cliente** es una escuela o empresa que compra una licencia del desarrollador. Alumnos, profesores, administrativos y personal de finanzas **no compran membresías individuales**. Comparten el plan contratado por su institución, pero conservan restricciones RBAC por rol.
 
-`Rol del empleado permite la acción` **Y** `Licencia de la empresa permite la funcionalidad`.
+La aplicación demuestra dos reglas de autorización:
 
-La aplicación incluye un rol adicional de **DESARROLLADOR** para la demostración de ventas. No es una cuenta de la escuela. Solo este perfil asigna paquetes empresariales y vigencias.
+1. La licencia empresarial debe estar vigente e incluir la funcionalidad.
+2. El rol del usuario también debe permitir utilizarla.
 
-## Catálogo de planes
+Los tres planes son:
 
 | Funcionalidad | Bronce | Silver | Golden |
 |---|:---:|:---:|:---:|
 | Dashboard | ✓ | ✓ | ✓ |
 | Directorio de alumnos | ✓ | ✓ | ✓ |
 | Cursos y horarios | ✓ | ✓ | ✓ |
-| Consultar Kárdex | ✓ | ✓ | ✓ |
+| Consulta de Kárdex | ✓ | ✓ | ✓ |
 | Control de asistencia | ✓ | ✓ | ✓ |
 | Inscripciones | — | ✓ | ✓ |
-| Finanzas / Estado de cuenta | — | ✓ | ✓ |
+| Estado de cuenta / Finanzas | — | ✓ | ✓ |
 | Notificaciones | — | ✓ | ✓ |
 | Mapa del clima | — | ✓ | ✓ |
-| Exportación CSV de Kárdex | — | ✓ | ✓ |
-| Capas meteorológicas avanzadas | — | ✓ | ✓ |
-| Servicios de Nóminas API | — | — | ✓ |
+| Exportación CSV del Kárdex | — | ✓ | ✓ |
+| Capas meteorológicas | — | ✓ | ✓ |
+| Servicios de Nóminas | — | — | ✓ |
 | Timbrado CFDI | — | — | ✓ |
 
-**Silver tiene exactamente 2 funcionalidades menos que Golden:** Nóminas API y Timbrado CFDI. Bronce tiene solo 5 funciones esenciales.
+**Silver tiene dos funciones menos que Golden:** Nóminas y Timbrado CFDI. Bronce solo ofrece lo fundamental.
 
-Los roles internos continúan restringiendo acceso. Por ejemplo, tener Golden **no autoriza** a un alumno a timbrar CFDI ni a entrar a Nóminas.
+## Sin créditos
 
-## Vigencias de la licencia empresarial
+El mecanismo anterior de compra y descuento de créditos fue eliminado por petición de la desarrolladora. Tampoco se compran pases adicionales para los módulos. Si el plan empresarial contratado incluye una función, se puede utilizar durante la vigencia de la licencia sin cargos internos por operación.
 
-El vendedor/desarrollador puede demostrar la venta de cualquiera de los tres planes por:
-- 15 minutos
-- 2 horas
-- 7 días
+## Paquetes de vigencia
 
-Pasado el vencimiento de licencia, los módulos del plan quedan deshabilitados; queda disponible la pantalla de consulta de licencia para indicar que debe renovarse.
+El proveedor puede asignar cualquiera de los tres planes por **15 minutos, 2 horas o 7 días** (duraciones cortas para demostración). Cuando vence la licencia, los módulos contratados se ocultan/bloquean; queda disponible **Licencia de la empresa** para consultar el estado.
 
-La simulación asigna **una bolsa de créditos a la empresa** al activar la licencia: Bronce 0, Silver 120, Golden 350. Los usuarios no compran una membresía personal. En Silver/Golden, la empresa puede usar los créditos compartidos para funciones adicionales en dos módulos:
+## Pruebas de clase
 
-- Kárdex: exportar CSV cuesta 8 créditos por acción, o un pase de 15 min, 2 horas o 7 días (15/60/150 créditos).
-- Clima: activar una capa de mapa cuesta 4 créditos por acción, o el mismo tipo de pase de tiempo (15/60/150 créditos).
+1. En PowerShell, actualizar la rama `feature/solo-paquetes-empresariales`.
+2. Compilar con `javac -encoding UTF-8 Main.java ProfactClient.java WeatherHandler.java EscolarHttpServer.java`.
+3. Ejecutar `java EscolarHttpServer` e ingresar a `http://localhost:8081/`.
+4. Iniciar sesión como **Desarrollador / Proveedor** (cuenta académica `proveedor@sistema.demo`, contraseña `proveedor2026`).
+5. Abrir **Licencia de la empresa**, asignar **Bronce** durante 15 minutos. Cerrar sesión y entrar como Administración: solo deben estar los cinco módulos básicos.
+6. Repetir con Silver. Administración tendrá inscripciones, finanzas, notificaciones y clima, pero no Nóminas ni Timbrado CFDI.
+7. Repetir con Golden. Se habilitan Nóminas y Timbrado CFDI para los roles autorizados. Confirmar que el alumno no tenga permisos de facturación.
+8. Probar la exportación CSV del Kárdex y las capas del clima en Silver y Golden: ya no descuentan créditos.
+9. Esperar el vencimiento del plan de 15 minutos y verificar que la licencia se muestre como vencida.
 
-Los pases son **por empresa y por módulo**, no por empleado. En Bronce estas funciones no están incluidas y no se habilitan por tener créditos.
+## Limitaciones de este prototipo
 
-## Cómo demostrarlo en la computadora
+Se trata de una **demostración académica**. Las licencias se guardan en `localStorage` de un solo navegador y los accesos se controlan con JavaScript. La autenticación actual es de prueba, las credenciales están en el frontend y **los endpoints de Java no verifican de forma segura la licencia**. No se debe vender ni desplegar como sistema de licencias real sin una base de datos para empresas, licencias y usuarios, sesiones seguras y comprobaciones por operación en el servidor.
 
-1. Actualizar rama `feature/licencias-empresariales-bronce-silver-golden`.
-2. En PowerShell (opcional, para mapa de clima): `$env:OPENWEATHER_API_KEY = "TU_CLAVE_PRIVADA"`.
-3. Compilar `javac -encoding UTF-8 Main.java ProfactClient.java WeatherHandler.java EscolarHttpServer.java` e iniciar `java EscolarHttpServer`.
-4. Abrir **http://localhost:8081/**.
-5. Desde la pantalla de login, seleccionar **Desarrollador / Proveedor del software (DEMO)**. Las credenciales de prueba son `proveedor@sistema.demo` / `proveedor2026`.
-6. Entrar a **Licencia de la empresa**, elegir **Bronce** y pulsar **Asignar 15 minutos**. Cerrar sesión.
-7. Entrar como Administración: verás solamente los módulos básicos; inscripciones, finanzas, clima y notificaciones quedarán ocultos.
-8. Cerrar sesión, entrar como Desarrollador y asignar **Silver** por 2 horas. Volver a iniciar sesión como Administración. Se habilitarán inscripciones, finanzas, clima, exportación, etc. Nóminas y Timbrar CFDI seguirán sin mostrarse.
-9. Repetir con **Golden** por 7 días. Administración verá Nóminas y el botón de Timbrar CFDI (cuando corresponda a un cargo pagado). Probar acceso a exportación CSV y capas del clima consumiendo la bolsa de créditos corporativos.
-10. Probar una cuenta de Alumno con Golden: no verá Nóminas ni podrá timbrar CFDI por restricciones RBAC.
-
-## Naturaleza DEMO y limitaciones importantes
-
-Todo este módulo es una **maqueta académica**, no un producto comercial seguro. Los planes, roles, saldos, expiraciones y compras se almacenan en `localStorage` y se ejecutan en JavaScript del navegador. Otros navegadores no compartirán el estado, y alguien podría manipularlo en las herramientas de desarrollo. Los endpoints del backend **no están protegidos por una autorización empresarial verificable**. Esto significa que la limitación del menú y las validaciones actuales **no son control de acceso suficiente para producción**.
-
-Para vender realmente el sistema a una escuela se requiere:
-- Tabla `empresas` o tenants y cuentas de usuario asociadas a empresa.
-- Tabla `licencias` vinculada a `empresa_id` con plan, estado, fecha de inicio y vencimiento.
-- Catálogo de `funcionalidades` y tabla de permisos de cada plan.
-- Saldo corporativo en una BD y transacciones atómicas para no gastar el mismo crédito simultáneamente.
-- API de autorización **en el servidor** para cada endpoint, con roles y licencias verificadas.
-- Proceso de compra/renovación validado por el proveedor de pagos, sin confiar en datos del cliente.
-- Control de sesiones seguro, logs de auditoría, vencimientos y facturación de licencias.
-
-## Aclaración de planos de negocio
-
-La facturación **Profact CFDI** corresponde a las operaciones escolares, y solo se habilita como una función del plan Golden. La venta de licencias empresariales es un proceso distinto, gestionado por el proveedor del sistema.
+Para producción, cada organización necesitaría un identificador de empresa, licencias asociadas a ella, vigencia verificable, permisos asignados por plan, facturación de la licencia y validación de roles del lado del servidor.
