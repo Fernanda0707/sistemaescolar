@@ -40,9 +40,12 @@ public class EscolarHttpServer {
     public void start() throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
 
+        // Resumen de métricas HTTP consultable solo desde localhost.
+        server.createContext("/api/health/metrics", ServiceMetrics::respond);
+
         // Servir la interfaz desde HTTP evita abrirla como file:// (sin Referer valido).
         // Solo se expone index.html; nunca exponer el directorio entero ni claves.
-        server.createContext("/", exchange -> {
+        com.sun.net.httpserver.HttpContext schoolPage = server.createContext("/", exchange -> {
             String path = exchange.getRequestURI().getPath();
             if (!"/".equals(path) && !"/index.html".equals(path) && !"/AccessDemo.js".equals(path)) {
                 sendJsonResponse(exchange, 404, "{\"error\":\"Pagina no encontrada\"}");
@@ -69,23 +72,29 @@ public class EscolarHttpServer {
             }
         });
 
+        schoolPage.getFilters().add(ServiceMetrics.forService("escolar"));
+
         // 1. Endpoint: Consultar asignaciones académicas (para Nóminas)
-        server.createContext("/api/academic/assignments", new AcademicHandler(academicService));
+        server.createContext("/api/academic/assignments", new AcademicHandler(academicService))
+                .getFilters().add(ServiceMetrics.forService("academico"));
 
         // 2. Endpoint: Enviar notificación (para Nóminas)
         server.createContext("/api/notifications/send", new NotificationHandler(notificationService));
 
         // 3. Endpoint proxy/cliente: Consultar empleado docente en Nóminas
-        server.createContext("/api/nominas/docente", new NominasDocenteHandler(httpClient));
+        server.createContext("/api/nominas/docente", new NominasDocenteHandler(httpClient))
+                .getFilters().add(ServiceMetrics.forService("nominas"));
 
         // 4. Endpoint proxy/cliente: Consultar contrato docente en Nóminas
-        server.createContext("/api/nominas/contrato", new NominasContratoHandler(httpClient));
+        server.createContext("/api/nominas/contrato", new NominasContratoHandler(httpClient))
+                .getFilters().add(ServiceMetrics.forService("nominas"));
 
         // 5. Endpoint de Facturación: Timbrado CFDI Profact v2.0
         server.createContext("/api/finance/timbrar", new ProfactTimbradoHandler());
 
         // Clima local en Durango: datos y capas de OpenWeatherMap mediante proxy seguro.
-        server.createContext("/api/weather/", new WeatherHandler());
+        server.createContext("/api/weather/", new WeatherHandler())
+                .getFilters().add(ServiceMetrics.forService("clima"));
 
         server.setExecutor(null); // default executor
         server.start();
@@ -98,6 +107,7 @@ public class EscolarHttpServer {
         System.out.println("   - GET  http://localhost:" + PORT + "/api/nominas/contrato?empleado_id=...");
         System.out.println("   - POST http://localhost:" + PORT + "/api/finance/timbrar");
         System.out.println("   - GET  http://localhost:" + PORT + "/api/weather/current");
+        System.out.println("   - GET  http://localhost:" + PORT + "/api/health/metrics (localhost)");
         System.out.println("============================================================");
     }
 
